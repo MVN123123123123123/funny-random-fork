@@ -18,9 +18,16 @@ struct MenuItem {
     bool        is_action; // true for Save/Install/Abort group
 };
 
+#include "pages/graphics_page.hpp"
+#include "pages/network_page.hpp"
+#include "../../variables/regions.hpp"
+
 class MainMenu {
 public:
-    MainMenu();
+    MainMenu(const std::vector<GPUInfo>& gpus = {},
+             const std::vector<NetIfaceInfo>& ifaces = {},
+             const std::vector<WifiNetwork>& wifi = {},
+             const std::vector<TZRegion>& tz = {});
     ~MainMenu();
 
     // Add a page to the menu. MainMenu takes ownership of the Page pointer.

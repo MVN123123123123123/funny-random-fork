@@ -94,28 +94,7 @@ int main() {
     ncurses.init_ncurses();
 
     // ── Build main menu ─────────────────────────────────────────────────
-    MainMenu menu;
-
-    menu.add_page("Installer Language",          new LanguagePage());
-    menu.add_page("Mirror Configuration",        new MirrorPage());
-    menu.add_page("Keyboard and Locale",         new KeyboardLocalePage());
-    menu.add_page("Storage Device Configuration", new DiskPage());
-    menu.add_page("ZRAM and ZSWAP",              new ZramPage());
-    menu.add_page("Graphics Hardware",           new GraphicsPage(gpu_items));
-    menu.add_page("Profile",                     new ProfilePage());
-    menu.add_page("Network",                     new NetworkPage(net_items, wifi_items));
-    menu.add_page("Root and User Accounts",      new AccountsPage());
-    menu.add_page("Kernels",                     new KernelsPage());
-    menu.add_page("Bootloader",                  new BootloaderPage());
-    menu.add_page("Time and Date",               new TimeDatePage(tz_items));
-    menu.add_page("Audio",                       new StubPage("Audio"));
-    menu.add_page("Services",                    new StubPage("Services"));
-    menu.add_page("Additional Packages",         new StubPage("Additional Packages"));
-
-    menu.add_separator();
-    menu.add_action("Save Config");
-    menu.add_action("INSTALL!");
-    menu.add_action("Abort");
+    MainMenu menu(gpu_items, net_items, wifi_items, tz_items);
 
     // ── Run ─────────────────────────────────────────────────────────────
     menu.run();

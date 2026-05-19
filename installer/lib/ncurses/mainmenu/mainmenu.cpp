@@ -5,7 +5,49 @@
 #include <algorithm>
 #include <cstring>
 
-MainMenu::MainMenu() {}
+// Page headers
+#include "pages/language_page.hpp"
+#include "pages/mirror_page.hpp"
+#include "pages/keyboard_locale_page.hpp"
+#include "pages/disk_page.hpp"
+#include "pages/zram_page.hpp"
+#include "pages/graphics_page.hpp"
+#include "pages/profile_page.hpp"
+#include "pages/network_page.hpp"
+#include "pages/accounts_page.hpp"
+#include "pages/kernels_page.hpp"
+#include "pages/bootloader_page.hpp"
+#include "pages/timedate_page.hpp"
+#include "pages/stub_page.hpp"
+
+// Variables
+#include "../../variables/regions.hpp"
+
+MainMenu::MainMenu(const std::vector<GPUInfo>& gpus,
+                   const std::vector<NetIfaceInfo>& ifaces,
+                   const std::vector<WifiNetwork>& wifi,
+                   const std::vector<TZRegion>& tz) {
+    add_page("Installer Language",          new LanguagePage());
+    add_page("Mirror Configuration",        new MirrorPage());
+    add_page("Keyboard and Locale",         new KeyboardLocalePage());
+    add_page("Storage Device Configuration", new DiskPage());
+    add_page("ZRAM and ZSWAP",              new ZramPage());
+    add_page("Graphics Hardware",           new GraphicsPage(gpus));
+    add_page("Profile",                     new ProfilePage());
+    add_page("Network",                     new NetworkPage(ifaces, wifi));
+    add_page("Root and User Accounts",      new AccountsPage());
+    add_page("Kernels",                     new KernelsPage());
+    add_page("Bootloader",                  new BootloaderPage());
+    add_page("Time and Date",               new TimeDatePage(tz.empty() ? get_regions() : tz));
+    add_page("Audio",                       new StubPage("Audio"));
+    add_page("Services",                    new StubPage("Services"));
+    add_page("Additional Packages",         new StubPage("Additional Packages"));
+
+    add_separator();
+    add_action("Save Config");
+    add_action("INSTALL!");
+    add_action("Abort");
+}
 
 MainMenu::~MainMenu() {
   for (auto &item : items_) {

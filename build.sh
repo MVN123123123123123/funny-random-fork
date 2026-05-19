@@ -52,14 +52,15 @@ mkdir -p "$OUTDIR"
 
 case "${1:-}" in
     test-ui)
-        echo "==> Building TUI test with CMake..."
+        echo "==> Building TUI test and Production targets with CMake..."
         mkdir -p "$SCRIPT_DIR/build"
         cd "$SCRIPT_DIR/build"
         cmake -DBUILD_TEST_UI=ON ..
-        cmake --build . --target test_ui
+        cmake --build .
         echo ""
-        echo "==> Built: $SCRIPT_DIR/build/test_ui"
-        echo "    Run with: $SCRIPT_DIR/build/test_ui"
+        echo "==> Built:"
+        echo "    - $SCRIPT_DIR/build/test_ui"
+        echo "    - $SCRIPT_DIR/build/haruka_installer"
         ;;
 
     clean)

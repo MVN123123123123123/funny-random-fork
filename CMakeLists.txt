@@ -83,6 +83,14 @@ if(BUILD_TEST_UI)
     target_link_libraries(test_ui PRIVATE ${CURSES_LIBRARIES})
 endif()
 
-# ── Main installer executable (placeholder) ──────────────────────────────────
-# add_executable(haruka_installer ${INSTALLER_DIR}/main.cpp $<TARGET_OBJECTS:ncurseslib>)
-# target_link_libraries(haruka_installer PRIVATE ${CURSES_LIBRARIES})
+# ── Main installer executable ────────────────────────────────────────────────
+add_executable(haruka_installer ${INSTALLER_DIR}/main.cpp $<TARGET_OBJECTS:ncurseslib>)
+target_include_directories(haruka_installer PRIVATE
+    ${NCURSES_LIB_DIR}
+    ${NCURSES_LIB_DIR}/mainmenu
+    ${NCURSES_LIB_DIR}/mainmenu/pages
+    ${NCURSES_LIB_DIR}/test
+    ${NCURSES_LIB_DIR}/help
+    ${NCURSES_LIB_DIR}/versioning
+)
+target_link_libraries(haruka_installer PRIVATE ${CURSES_LIBRARIES})
