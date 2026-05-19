@@ -18,6 +18,8 @@
 #include "pages/kernels_page.hpp"
 #include "pages/bootloader_page.hpp"
 #include "pages/timedate_page.hpp"
+#include "pages/audio.hpp"
+#include "pages/services.hpp"
 #include "pages/stub_page.hpp"
 
 // Variables
@@ -39,8 +41,8 @@ MainMenu::MainMenu(const std::vector<GPUInfo>& gpus,
     add_page("Kernels",                     new KernelsPage());
     add_page("Bootloader",                  new BootloaderPage());
     add_page("Time and Date",               new TimeDatePage(tz.empty() ? get_regions() : tz));
-    add_page("Audio",                       new StubPage("Audio"));
-    add_page("Services",                    new StubPage("Services"));
+    add_page("Audio",                       new AudioPage());
+    add_page("Services",                    new ServicesPage());
     add_page("Additional Packages",         new StubPage("Additional Packages"));
 
     add_separator();

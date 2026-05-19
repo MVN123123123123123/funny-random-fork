@@ -106,6 +106,13 @@ public:
     bool zram_enabled = false;
     bool zswap_enabled = false;
 
+    // Audio Configuration
+    // Options: "PipeWire", "PulseAudio", "None"
+    std::string audio_system = "PipeWire";
+
+    // Enabled Systemd Services
+    std::vector<std::string> enabled_services = {"NetworkManager", "bluetooth", "cups", "power-profiles-daemon"};
+
     // ... Add more as needed ...
 
 private:
