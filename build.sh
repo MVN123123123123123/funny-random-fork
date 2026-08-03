@@ -63,6 +63,17 @@ case "${1:-}" in
         echo "    - $SCRIPT_DIR/build/haruka_installer"
         ;;
 
+    cmake)
+        echo "==> Building Production target with CMake..."
+        mkdir -p "$SCRIPT_DIR/build"
+        cd "$SCRIPT_DIR/build"
+        cmake -DBUILD_TEST_UI=OFF ..
+        cmake --build .
+        echo ""
+        echo "==> Built:"
+        echo "    - $SCRIPT_DIR/build/haruka_installer"
+        ;;
+
     clean)
         echo "==> Cleaning build artifacts..."
         rm -rf "$SCRIPT_DIR/build"
@@ -70,9 +81,10 @@ case "${1:-}" in
         ;;
 
     *)
-        echo "Usage: ./build.sh [test-ui|clean]"
+        echo "Usage: ./build.sh [test-ui|cmake|clean]"
         echo ""
         echo "  test-ui   Build the ncurses TUI test program (via CMake)"
+        echo "  cmake     Build production installer only (via CMake)"
         echo "  clean     Remove all build artifacts"
         ;;
 esac

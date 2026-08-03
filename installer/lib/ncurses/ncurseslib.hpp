@@ -60,7 +60,7 @@ public:
     static std::string masked_input(WINDOW* win, int y, int x, int display_width, int max_len);
     
     static bool is_back_key(int ch) {
-        return (ch == 27 || ch == KEY_BACKSPACE || ch == 127 || ch == 8);
+        return (ch == 27);  // ESC only — Backspace is for text editing, not navigation
     }
 };
 

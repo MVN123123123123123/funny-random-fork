@@ -20,7 +20,9 @@
 #include "pages/timedate_page.hpp"
 #include "pages/audio.hpp"
 #include "pages/services.hpp"
-#include "pages/stub_page.hpp"
+#include "pages/additional_packages_page.hpp"
+#include "pages/install_validator.hpp"
+#include "pages/installer_backend.hpp"
 
 // Variables
 #include "../../variables/regions.hpp"
@@ -43,7 +45,7 @@ MainMenu::MainMenu(const std::vector<GPUInfo>& gpus,
     add_page("Time and Date",               new TimeDatePage(tz.empty() ? get_regions() : tz));
     add_page("Audio",                       new AudioPage());
     add_page("Services",                    new ServicesPage());
-    add_page("Additional Packages",         new StubPage("Additional Packages"));
+    add_page("Additional Packages",         new AdditionalPackagesPage());
 
     add_separator();
     add_action("Save Config");
@@ -288,34 +290,143 @@ void MainMenu::cursor_down() {
 
 void MainMenu::handle_action(const std::string &label) {
   if (label == "Abort") {
-    werase(win_content_);
-    NcursesLib::draw_titled_box(win_content_, "Abort");
-    NcursesLib::print_center_attr(win_content_, getmaxy(win_content_) / 2,
-                                  "Exiting HarukaInstaller...",
-                                  COLOR_PAIR(CP_CHECKBOX_OFF) | A_BOLD);
-    wrefresh(win_content_);
-    napms(1000);
+    if (YesNoPopup::show("Confirm Abort", "Are you sure you want to exit HarukaInstaller?")) {
+      werase(win_content_);
+      NcursesLib::draw_titled_box(win_content_, "Abort");
+      NcursesLib::print_center_attr(win_content_, getmaxy(win_content_) / 2,
+                                    "Exiting HarukaInstaller...",
+                                    COLOR_PAIR(CP_CHECKBOX_OFF) | A_BOLD);
+      wrefresh(win_content_);
+      napms(1000);
+    }
   } else if (label == "Save Config") {
     werase(win_content_);
     NcursesLib::draw_titled_box(win_content_, "Save Config");
     auto &ds = DataStore::instance();
-    mvwprintw(win_content_, 4, 4, "Mirrors:    %zu", ds.mirrors.size());
-    mvwprintw(win_content_, 5, 4, "Disks:      %zu", ds.disks.size());
-    mvwprintw(win_content_, 6, 4, "ZRAM/ZSWAP: %s/%s",
+    int y = 3;
+    mvwprintw(win_content_, y++, 4, "Hostname:    %s", ds.hostname.c_str());
+    mvwprintw(win_content_, y++, 4, "Timezone:    %s", ds.timezone().c_str());
+    mvwprintw(win_content_, y++, 4, "Bootloader:  %s", ds.bootloader.c_str());
+    mvwprintw(win_content_, y++, 4, "Mirrors:     %zu", ds.mirrors.size());
+    mvwprintw(win_content_, y++, 4, "Disks:       %zu", ds.disks.size());
+    mvwprintw(win_content_, y++, 4, "ZRAM/ZSWAP:  %s/%s",
               ds.zram_enabled ? "ON" : "OFF", ds.zswap_enabled ? "ON" : "OFF");
+    mvwprintw(win_content_, y++, 4, "Audio:       %s", ds.audio_system.c_str());
+    mvwprintw(win_content_, y++, 4, "Root Pass:   %s", ds.root_password.empty() ? "NOT SET" : "Set");
+    mvwprintw(win_content_, y++, 4, "Users:       %zu", ds.users.size());
+    mvwprintw(win_content_, y++, 4, "Extra Pkgs:  %zu", ds.additional_packages.size());
     NcursesLib::print_center_attr(win_content_, getmaxy(win_content_) - 4,
-                                  "Configuration saved to DataStore!",
+                                  "Configuration summary displayed!",
                                   COLOR_PAIR(CP_CHECKBOX_ON) | A_BOLD);
     wrefresh(win_content_);
-    napms(1500);
-  } else if (label == "INSTALL!") {
-    werase(win_content_);
-    NcursesLib::draw_titled_box(win_content_, "INSTALL!");
-    NcursesLib::print_center_attr(win_content_, getmaxy(win_content_) / 2,
-                                  "Installation would begin here! (test mode)",
-                                  COLOR_PAIR(CP_ACTION_ITEM) | A_BOLD);
-    wrefresh(win_content_);
     napms(2000);
+  } else if (label == "INSTALL!") {
+    // ── Step 1: Validation ──
+    auto results = InstallValidator::validate();
+    bool has_errors = InstallValidator::has_errors(results);
+    
+    if (!results.empty()) {
+      // Show validation results
+      werase(win_content_);
+      NcursesLib::draw_titled_box(win_content_, has_errors ? "Validation Errors" : "Validation Warnings");
+      int y = 2;
+      for (const auto& r : results) {
+        int cp = r.is_warning ? CP_ACTION_ITEM : CP_CHECKBOX_OFF;
+        wattron(win_content_, COLOR_PAIR(cp) | A_BOLD);
+        mvwprintw(win_content_, y, 4, "%s %s", r.is_warning ? "[WARN]" : "[FAIL]", r.message.c_str());
+        wattroff(win_content_, COLOR_PAIR(cp) | A_BOLD);
+        y++;
+      }
+      if (has_errors) {
+        NcursesLib::print_center_attr(win_content_, getmaxy(win_content_) - 3,
+          "Fix the errors above before installing.",
+          COLOR_PAIR(CP_CHECKBOX_OFF) | A_BOLD);
+        NcursesLib::print_center(win_content_, getmaxy(win_content_) - 2,
+          "Press any key to continue.");
+        wrefresh(win_content_);
+        wgetch(win_content_);
+        return;
+      }
+      NcursesLib::print_center(win_content_, getmaxy(win_content_) - 2,
+        "Press any key to continue.");
+      wrefresh(win_content_);
+      wgetch(win_content_);
+    }
+
+    // ── Step 2: Summary confirmation ──
+    std::string summary = InstallerBackend::generate_summary();
+    // Show summary in content area
+    werase(win_content_);
+    NcursesLib::draw_titled_box(win_content_, "Installation Summary");
+    int y = 2;
+    std::istringstream ss(summary);
+    std::string line;
+    while (std::getline(ss, line) && y < getmaxy(win_content_) - 4) {
+      mvwprintw(win_content_, y++, 4, "%s", line.c_str());
+    }
+    wrefresh(win_content_);
+    
+    if (!YesNoPopup::show("Confirm Installation",
+          "This will install Arch Linux with the above settings.",
+          "ALL DATA on target partitions will be OVERWRITTEN!")) {
+      return; // User cancelled
+    }
+
+    // ── Step 3: Execute installation ──
+    auto commands = InstallerBackend::generate_commands();
+    werase(win_content_);
+    NcursesLib::draw_titled_box(win_content_, "Installing...");
+    
+    int total = (int)commands.size();
+    int log_y = 2;
+    int max_log_y = getmaxy(win_content_) - 4;
+    
+    for (int i = 0; i < total; i++) {
+      // Progress bar
+      int bar_w = getmaxx(win_content_) - 8;
+      int filled = (int)((float)(i + 1) / total * bar_w);
+      wattron(win_content_, COLOR_PAIR(CP_STATUS_BAR));
+      mvwhline(win_content_, getmaxy(win_content_) - 2, 4, ' ', bar_w);
+      wattron(win_content_, COLOR_PAIR(CP_CHECKBOX_ON));
+      mvwhline(win_content_, getmaxy(win_content_) - 2, 4, '=', filled);
+      wattroff(win_content_, COLOR_PAIR(CP_CHECKBOX_ON));
+      mvwprintw(win_content_, getmaxy(win_content_) - 1, 4, "Step %d/%d", i + 1, total);
+      
+      // Log the command
+      if (log_y >= max_log_y) {
+        // Scroll up
+        for (int sy = 3; sy < max_log_y; sy++) {
+          // Simple scroll by redrawing
+        }
+        log_y = max_log_y - 1;
+      }
+      
+      // Show command (truncated)
+      std::string display_cmd = commands[i];
+      int max_w = getmaxx(win_content_) - 8;
+      if ((int)display_cmd.size() > max_w) display_cmd = display_cmd.substr(0, max_w - 3) + "...";
+      
+      wattron(win_content_, COLOR_PAIR(CP_ACTION_ITEM));
+      mvwprintw(win_content_, log_y, 4, "> %s", display_cmd.c_str());
+      wattroff(win_content_, COLOR_PAIR(CP_ACTION_ITEM));
+      log_y++;
+      wrefresh(win_content_);
+      
+      // Execute (in production) or simulate
+      #ifdef TESTUI
+        napms(200); // Simulate delay in test mode
+      #else
+        InstallerBackend::execute_command(commands[i], [](const std::string&) {});
+      #endif
+    }
+    
+    // Done!
+    NcursesLib::print_center_attr(win_content_, getmaxy(win_content_) / 2,
+      "Installation Complete!", COLOR_PAIR(CP_CHECKBOX_ON) | A_BOLD);
+    NcursesLib::print_center(win_content_, getmaxy(win_content_) / 2 + 2,
+      "Press any key to exit.");
+    wrefresh(win_content_);
+    wgetch(win_content_);
   }
 }
 

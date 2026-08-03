@@ -1,5 +1,5 @@
 #pragma once
-#include "../configurations/datastore.hpp"
+#include "../ncurses/configurations/datastore.hpp"
 #include <string>
 
 inline bool is_package_installed(const std::string& pkg_name) {

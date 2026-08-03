@@ -3,9 +3,6 @@
 #include "../../ncurseslib.hpp"
 #include "../../popups.hpp"
 #include "page.hpp"
-#include <algorithm>
-#include <iomanip>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -255,50 +252,8 @@ private:
     wattroff(win, COLOR_PAIR(CP_STATUS_BAR));
   }
 
-  void render_edit_partition(WINDOW *win) {
-    int h, w;
-    getmaxyx(win, h, w);
-    auto &p =
-        DataStore::instance().disks[selected_disk_].partitions[selected_part_];
-    wattron(win, COLOR_PAIR(CP_SECTION_TITLE) | A_BOLD);
-    mvwprintw(win, 1, 2, "Edit Partition: %s", p.device.c_str());
-    wattroff(win, COLOR_PAIR(CP_SECTION_TITLE) | A_BOLD);
-    mvwprintw(win, 4, 4, "Role:        %s",
-              p.mount_point == "/boot/efi" ? "EFI System"
-              : p.mount_point == "/"       ? "Root"
-                                           : "Custom");
-    mvwprintw(win, 6, 4, "Mount Point: %s", p.mount_point.c_str());
-    mvwprintw(win, 8, 4, "Filesystem:  %s", p.filesystem.c_str());
-    mvwprintw(win, 10, 4, "Flags:       %s", p.flags.c_str());
-    mvwprintw(win, 12, 4, "Size (MB):   %lu", p.size_mb);
-    const char *actions[] = {"[ SAVE ]", "[ CANCEL ]"};
-    for (int i = 0; i < 2; i++) {
-      int y = 14 + (i * 2);
-      if (selected_part_field_ == 5 + i) {
-        wattron(win, COLOR_PAIR(CP_HIGHLIGHT));
-        mvwhline(win, y, 4, ' ', w - 8);
-        mvwprintw(win, y, 6, "%s", actions[i]);
-        wattroff(win, COLOR_PAIR(CP_HIGHLIGHT));
-      } else
-        mvwprintw(win, y, 6, "%s", actions[i]);
-    }
-    if (selected_part_field_ < 5) {
-      wattron(win, COLOR_PAIR(CP_HIGHLIGHT));
-      int y = 4 + (selected_part_field_ * 2);
-      mvwhline(win, y, 4, ' ', w - 8);
-      if (selected_part_field_ == 0)
-        mvwprintw(win, y, 4, "Role:        [ Select ]");
-      else if (selected_part_field_ == 1)
-        mvwprintw(win, y, 4, "Mount Point: %s", p.mount_point.c_str());
-      else if (selected_part_field_ == 2)
-        mvwprintw(win, y, 4, "Filesystem:  %s", p.filesystem.c_str());
-      else if (selected_part_field_ == 3)
-        mvwprintw(win, y, 4, "Flags:       %s", p.flags.c_str());
-      else if (selected_part_field_ == 4)
-        mvwprintw(win, y, 4, "Size (MB):   %lu", p.size_mb);
-      wattroff(win, COLOR_PAIR(CP_HIGHLIGHT));
-    }
-  }
+
+
 
   bool handle_select_disk(int ch) {
     if (ch == KEY_UP && selected_disk_ > 0) {

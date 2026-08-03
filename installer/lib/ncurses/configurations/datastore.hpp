@@ -65,6 +65,18 @@ struct KernelOption {
     bool        selected;
 };
 
+struct UserAccount {
+    std::string username;
+    std::string password;
+    bool        in_wheel;
+};
+
+struct GPUDriverSelection {
+    std::string gpu_name;
+    std::string driver_package;
+    std::string vulkan_package;
+};
+
 // ── DataStore Singleton ─────────────────────────────────────────────────────
 
 class DataStore {
@@ -91,6 +103,7 @@ public:
 
     // Storage Configuration
     std::vector<DiskInfo> disks;
+    int selected_disk_idx = 0;
 
     // Kernels
     std::vector<KernelOption> kernels;
@@ -113,10 +126,65 @@ public:
     // Enabled Systemd Services
     std::vector<std::string> enabled_services = {"NetworkManager", "bluetooth", "cups", "power-profiles-daemon"};
 
-    // ... Add more as needed ...
+    // ── NEW FIELDS ──────────────────────────────────────────────────────
+
+    // Hostname
+    std::string hostname = "archlinux";
+
+    // Bootloader: "GRUB", "systemd-boot", "None"
+    std::string bootloader = "GRUB";
+
+    // Accounts
+    std::string root_password;
+    std::vector<UserAccount> users;
+
+    // Time/Date
+    std::string timezone_region = "Asia";
+    std::string timezone_city = "Manila";
+    bool ntp_enabled = true;
+    bool hwclock_sync = true;
+
+    // GPU Driver Selections
+    std::vector<GPUDriverSelection> gpu_drivers;
+
+    // Additional user-specified packages
+    std::vector<std::string> additional_packages;
+
+    // UEFI detection
+    bool is_uefi = false;
+
+    // Helper: get full timezone string
+    std::string timezone() const {
+        return timezone_region + "/" + timezone_city;
+    }
+
+    // Helper: check if a root mountpoint is configured
+    bool has_root_mountpoint() const {
+        for (const auto& disk : disks) {
+            for (const auto& part : disk.partitions) {
+                if (part.mount_point == "/") return true;
+            }
+        }
+        return false;
+    }
+
+    // Helper: check if EFI partition exists
+    bool has_efi_partition() const {
+        for (const auto& disk : disks) {
+            for (const auto& part : disk.partitions) {
+                if (part.mount_point == "/boot/efi" ||
+                    part.flags.find("esp") != std::string::npos ||
+                    part.flags.find("boot") != std::string::npos) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
 private:
     DataStore() = default;
     DataStore(const DataStore&) = delete;
     DataStore& operator=(const DataStore&) = delete;
 };
+

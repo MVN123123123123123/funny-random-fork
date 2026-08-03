@@ -2,3 +2,8 @@ build
 test_data
 PLAN
 demotest
+compile_commands.json
+.cache/
+*.o
+*.d
+installer/lib/ncurses/versioning/version_gen.hpp

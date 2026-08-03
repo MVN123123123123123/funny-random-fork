@@ -1,6 +1,7 @@
 #pragma once
 // graphics_page.hpp - Graphics Hardware detection and driver selection
 #include "../../ncurseslib.hpp"
+#include "../../configurations/datastore.hpp"
 #include "page.hpp"
 #include <string>
 #include <vector>
@@ -85,6 +86,23 @@ class GraphicsPage : public Page {
 public:
   GraphicsPage(const std::vector<GPUInfo> &gpus) : gpus_(gpus) {
     init_drivers();
+    sync_to_datastore();
+  }
+
+  void sync_to_datastore() {
+    auto& ds = DataStore::instance();
+    ds.gpu_drivers.clear();
+    for (size_t i = 0; i < gpus_.size(); i++) {
+      GPUDriverSelection sel;
+      sel.gpu_name = gpus_[i].name;
+      for (const auto& d : driver_options_[i]) {
+        if (d.selected) { sel.driver_package = d.package; break; }
+      }
+      for (const auto& v : vulkan_options_[i]) {
+        if (v.selected) { sel.vulkan_package = v.package; break; }
+      }
+      ds.gpu_drivers.push_back(sel);
+    }
   }
 
   std::string title() const override { return "Graphics Hardware"; }
@@ -218,6 +236,7 @@ public:
       if (ch == '\n' || ch == KEY_ENTER || ch == ' ') {
         for (auto &d : opts) d.selected = false;
         opts[driver_cursor_].selected = true;
+        sync_to_datastore();
         return true;
       }
     } else if (focus_ == 2) {
@@ -233,6 +252,7 @@ public:
       if (ch == '\n' || ch == KEY_ENTER || ch == ' ') {
         for (auto &v : opts) v.selected = false;
         opts[vulkan_cursor_].selected = true;
+        sync_to_datastore();
         return true;
       }
     }

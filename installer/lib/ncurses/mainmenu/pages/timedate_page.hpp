@@ -4,6 +4,7 @@
 #include "page.hpp"
 #include "../../ncurseslib.hpp"
 #include "../../../variables/regions.hpp"
+#include "../../configurations/datastore.hpp"
 #include <vector>
 #include <string>
 
@@ -18,7 +19,24 @@ class TimeDatePage : public Page {
     int city_scroll_ = 0;
 
 public:
-    TimeDatePage(const std::vector<TZRegion>& tz) : timezones_(tz) {}
+    TimeDatePage(const std::vector<TZRegion>& tz) : timezones_(tz) {
+        // Sync initial state from DataStore
+        auto& ds = DataStore::instance();
+        ntp_enabled_ = ds.ntp_enabled;
+        hwclock_sync_ = ds.hwclock_sync;
+        for (int i = 0; i < (int)timezones_.size(); i++) {
+            if (timezones_[i].region == ds.timezone_region) {
+                region_idx_ = i;
+                for (int j = 0; j < (int)timezones_[i].cities.size(); j++) {
+                    if (timezones_[i].cities[j] == ds.timezone_city) {
+                        city_idx_ = j;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
 
     std::string title() const override { return "Time and Date Configuration"; }
 
@@ -129,11 +147,19 @@ public:
         if (ch == '\t') { focus_ = (focus_ + 1) % 4; return true; }
 
         if (focus_ == 0) { // NTP
-            if (ch == ' ' || ch == '\n' || ch == KEY_ENTER) { ntp_enabled_ = !ntp_enabled_; return true; }
+            if (ch == ' ' || ch == '\n' || ch == KEY_ENTER) {
+                ntp_enabled_ = !ntp_enabled_;
+                DataStore::instance().ntp_enabled = ntp_enabled_;
+                return true;
+            }
             if (ch == KEY_DOWN) { focus_ = 1; return true; }
         }
         else if (focus_ == 1) { // hwclock
-            if (ch == ' ' || ch == '\n' || ch == KEY_ENTER) { hwclock_sync_ = !hwclock_sync_; return true; }
+            if (ch == ' ' || ch == '\n' || ch == KEY_ENTER) {
+                hwclock_sync_ = !hwclock_sync_;
+                DataStore::instance().hwclock_sync = hwclock_sync_;
+                return true;
+            }
             if (ch == KEY_UP) { focus_ = 0; return true; }
             if (ch == KEY_DOWN) { focus_ = 2; return true; }
         }
@@ -143,6 +169,8 @@ public:
                     region_idx_--;
                     city_idx_ = 0;
                     city_scroll_ = 0;
+                    DataStore::instance().timezone_region = timezones_[region_idx_].region;
+                    DataStore::instance().timezone_city = timezones_[region_idx_].cities[0];
                 } else {
                     focus_ = 1; // Seamlessly go up to hwclock
                 }
@@ -153,6 +181,8 @@ public:
                     region_idx_++;
                     city_idx_ = 0;
                     city_scroll_ = 0;
+                    DataStore::instance().timezone_region = timezones_[region_idx_].region;
+                    DataStore::instance().timezone_city = timezones_[region_idx_].cities[0];
                 }
                 return true;
             }
@@ -165,6 +195,7 @@ public:
             if (ch == KEY_UP) {
                 if (city_idx_ > 0) {
                     city_idx_--;
+                    DataStore::instance().timezone_city = cities[city_idx_];
                 } else {
                     focus_ = 1; // Seamlessly go up to hwclock
                 }
@@ -173,6 +204,7 @@ public:
             if (ch == KEY_DOWN) {
                 if (city_idx_ < (int)cities.size() - 1) {
                     city_idx_++;
+                    DataStore::instance().timezone_city = cities[city_idx_];
                 }
                 return true;
             }

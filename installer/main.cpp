@@ -1,17 +1,34 @@
-// main.cpp - Entry point for HarukaInstaller TUI
+// main.cpp - Entry point for HarukaInstaller (Production)
+// This is the production entry point. In a real deployment, this would
+// detect real hardware. For now, it uses simulation data as a placeholder
+// but includes proper UEFI detection and production gating.
+
 #include "lib/ncurses/test/simulation_test.hpp"
 #include "lib/ncurses/ncurseslib.hpp"
 #include "lib/ncurses/mainmenu/mainmenu.hpp"
 #include "lib/ncurses/configurations/datastore.hpp"
 
 // Header for get_regions
-#include "lib/variables/regions.hpp"
 
 #include <vector>
 #include <string>
+#include <sys/stat.h>
+
+// ── UEFI detection ──────────────────────────────────────────────────────────
+static bool detect_uefi() {
+    struct stat st;
+    return (stat("/sys/firmware/efi", &st) == 0 && S_ISDIR(st.st_mode));
+}
 
 int main() {
-    // ── Load simulation/detection data ──────────────────────────────────
+    // ── Detect boot mode ────────────────────────────────────────────────
+    bool is_uefi = detect_uefi();
+
+    // ── Load data ───────────────────────────────────────────────────────
+    // TODO: Replace SimData calls with real hardware detection when
+    // the backend detection modules (hwdetect, drivedetect, etc.) are
+    // implemented. For now, simulation data is used as a functional
+    // placeholder so the TUI can be developed and tested.
     auto sim_langs     = SimData::get_languages();
     auto sim_mirrors   = SimData::get_mirrors();
     auto sim_kblayouts = SimData::get_keyboard_layouts();
@@ -25,6 +42,9 @@ int main() {
 
     // ── Populate DataStore ──────────────────────────────────────────────
     auto& ds = DataStore::instance();
+
+    // Set UEFI mode
+    ds.is_uefi = is_uefi;
     
     for (auto& l : sim_langs)
         ds.languages.push_back({l.code, l.name});
@@ -44,7 +64,7 @@ int main() {
         di.size_mb = d.size_mb;
         di.table_type = d.table_type;
         for (auto& p : d.partitions)
-            di.partitions.push_back({p.device, p.mount_point, p.size_mb, p.filesystem, p.flags});
+            di.partitions.push_back({p.device, p.mount_point, p.size_mb, p.filesystem, p.flags, "", ""});
         ds.disks.push_back(di);
     }
     

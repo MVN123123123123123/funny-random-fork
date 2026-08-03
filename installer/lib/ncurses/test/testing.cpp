@@ -11,6 +11,8 @@
 #include "../popups.hpp"
 #include "../configurations/datastore.hpp"
 
+#include <sys/stat.h>
+
 // Page includes
 #include "../mainmenu/pages/language_page.hpp"
 #include "../mainmenu/pages/mirror_page.hpp"
@@ -42,6 +44,10 @@ int main() {
 
     // ── Populate DataStore ──────────────────────────────────────────────
     auto& ds = DataStore::instance();
+
+    // UEFI detection
+    struct stat st;
+    ds.is_uefi = (stat("/sys/firmware/efi", &st) == 0 && S_ISDIR(st.st_mode));
     
     for (auto& l : sim_langs)
         ds.languages.push_back({l.code, l.name});
@@ -61,7 +67,7 @@ int main() {
         di.size_mb = d.size_mb;
         di.table_type = d.table_type;
         for (auto& p : d.partitions)
-            di.partitions.push_back({p.device, p.mount_point, p.size_mb, p.filesystem, p.flags});
+            di.partitions.push_back({p.device, p.mount_point, p.size_mb, p.filesystem, p.flags, "", ""});
         ds.disks.push_back(di);
     }
     

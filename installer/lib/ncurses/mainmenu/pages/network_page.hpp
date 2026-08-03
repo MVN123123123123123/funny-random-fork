@@ -4,6 +4,7 @@
 // DHCP/Static IP configuration, and hostname setting.
 #include "page.hpp"
 #include "../../ncurseslib.hpp"
+#include "../../configurations/datastore.hpp"
 #include <vector>
 #include <string>
 
@@ -29,7 +30,6 @@ class NetworkPage : public Page {
     std::vector<NetIfaceInfo> ifaces_;
     std::vector<WifiNetwork> wifi_networks_;
     int selected_ = 0;
-    std::string hostname_ = "archlinux";
     // 0=interface list, 1=hostname, 2=actions, 3=wifi list, 4=ip config
     int focus_ = 0;
     int action_idx_ = 0;
@@ -63,7 +63,7 @@ public:
             wattroff(win, COLOR_PAIR(CP_HIGHLIGHT));
 
         wattron(win, COLOR_PAIR(CP_INPUT_FIELD));
-        mvwprintw(win, 2, 12, " %-20s ", hostname_.c_str());
+        mvwprintw(win, 2, 12, " %-20s ", DataStore::instance().hostname.c_str());
         wattroff(win, COLOR_PAIR(CP_INPUT_FIELD));
 
         NcursesLib::draw_hline(win, 3, 1, w - 2);
@@ -295,7 +295,7 @@ public:
         if (focus_ == 1) {
             if (ch == '\n' || ch == KEY_ENTER) {
                 std::string input = NcursesLib::text_input(win, 2, 13, 20, 64);
-                if (!input.empty()) hostname_ = input;
+                if (!input.empty()) DataStore::instance().hostname = input;
                 return true;
             }
             return false;

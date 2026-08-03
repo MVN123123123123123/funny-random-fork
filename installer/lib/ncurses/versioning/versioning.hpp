@@ -29,6 +29,6 @@ namespace Versioning {
     inline const char* author()   { return VERSION_AUTHOR; }
 
     inline std::string full_title() {
-        return std::string("HarukaInstall v") + VERSION_ID;
+        return std::string("HarukaInstaller v") + VERSION_ID;
     }
 }
