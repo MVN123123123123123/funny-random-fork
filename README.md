@@ -1,5 +1,5 @@
 # HarukaInstaller
-
+## forked to run as a linux installer for my random distro
 <img src=".github/public/images/banner.png">
 
 > [!WARNING]
