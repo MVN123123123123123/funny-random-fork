@@ -23,6 +23,7 @@
 #include "pages/additional_packages_page.hpp"
 #include "pages/install_validator.hpp"
 #include "pages/installer_backend.hpp"
+#include "pages/fowo_page.hpp"
 
 // Variables
 #include "../../variables/regions.hpp"
@@ -32,6 +33,7 @@ MainMenu::MainMenu(const std::vector<GPUInfo>& gpus,
                    const std::vector<WifiNetwork>& wifi,
                    const std::vector<TZRegion>& tz) {
     add_page("Installer Language",          new LanguagePage());
+    add_page("Fowo Configuration",          new FowoPage());
     add_page("Mirror Configuration",        new MirrorPage());
     add_page("Keyboard and Locale",         new KeyboardLocalePage());
     add_page("Storage Device Configuration", new DiskPage());

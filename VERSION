@@ -1,5 +1,5 @@
 installer="0.0.1"
 license="MIT"
-description="HarukaInstaller, formerly known as ULI or Universal Linux Installer, is yet another Linux Installer, that aims to of course, install a Linux Distro, but with "unsafe" C++"
-author="Mizumo-prjkt"
-co_author="claude-opus, gemini 3 flash, gemini 3 pro"
+description="Funny random fork, forked from HarukaInstaller, is a port to my own distro"
+author="Mizumo-prjkt + MVN123123123123123"
+co_author="claude-opus ???/4.6, gemini 3/3.5/3.6 flash, gemini 3/3.1 pro"
