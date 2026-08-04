@@ -43,6 +43,7 @@ add_compile_definitions(
 )
 
 # ── Find ncurses ─────────────────────────────────────────────────────────────
+set(CURSES_NEED_NCURSESW TRUE)
 find_package(Curses REQUIRED)
 include_directories(${CURSES_INCLUDE_DIRS})
 

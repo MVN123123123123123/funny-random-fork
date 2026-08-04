@@ -67,7 +67,7 @@ inline std::map<std::string, HelpEntry> page_help() {
         }},
         {"Mirror Configuration", {
             "Mirror Repository Configuration",
-            "Configure pacman mirror servers.\n"
+            "Configure Fowo mirror servers.\n"
             "\n"
             "  UP/DOWN   Navigate mirrors\n"
             "  ENTER     Toggle mirror on/off\n"
@@ -75,7 +75,7 @@ inline std::map<std::string, HelpEntry> page_help() {
             "  [ ]       Disabled mirror\n"
             "\n"
             "Enabled mirrors will be written to\n"
-            "/etc/pacman.d/mirrorlist during install.\n"
+            "/etc/fowo/mirrorlist during install.\n"
             "\n"
             "Press any key to close."
         }},
@@ -187,7 +187,7 @@ inline std::map<std::string, HelpEntry> wiki_entries() {
             "Pick GRUB if you are unsure."
         }},
         {"Mirror Speed", {
-            "Guide: Pacman Mirrors",
+            "Guide: Fowo Mirrors",
             "Choose mirrors geographically close to you\n"
             "for the best download speeds.\n"
             "You can enable multiple mirrors."

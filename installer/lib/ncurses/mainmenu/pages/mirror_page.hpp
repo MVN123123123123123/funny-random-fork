@@ -31,7 +31,7 @@ public:
     case MirrorSection::Manual:
       return "Mirrors > Manual Input";
     case MirrorSection::Settings:
-      return "Mirrors > Pacman Settings";
+      return "Mirrors > Repo Settings";
     default:
       return "Mirror Configuration";
     }
@@ -145,7 +145,7 @@ private:
 
     const char *options[] = {
         "Auto fetch possible server points (using reflector)",
-        "Manual Input of Repo", "Configure Pacman Settings"};
+        "Manual Input of Repo", "Configure Repo Settings"};
 
     for (int i = 0; i < 3; i++) {
       int y = 5 + i * 2;
@@ -259,14 +259,14 @@ private:
       }
     };
 
-    draw_toggle(4, "Enable Parallel Downloads",
-                DataStore::instance().pacman_cfg.parallel_downloads, 0);
-    draw_toggle(5, "Enable Color Output",
-                DataStore::instance().pacman_cfg.color, 1);
-    draw_toggle(6, "Check Disk Space",
-                DataStore::instance().pacman_cfg.check_space, 2);
-    draw_toggle(7, "Verbose Package Lists",
-                DataStore::instance().pacman_cfg.verbose_pkg_lists, 3);
+    draw_toggle(4, "Enable Testing Repo",
+                DataStore::instance().repo_cfg.enable_testing, 0);
+    draw_toggle(5, "Enable Multilib",
+                DataStore::instance().repo_cfg.enable_multilib, 1);
+    draw_toggle(6, "Enable Color Output",
+                DataStore::instance().repo_cfg.color, 2);
+    draw_toggle(7, "ILoveCandy (Pacman-style animation)",
+                DataStore::instance().repo_cfg.ilovecandy, 3);
 
     const char *extras[] = {"[ SAVE & BACK ]", "[ DO NOT SAVE & BACK ]"};
     for (int i = 0; i < 2; i++) {
@@ -502,40 +502,37 @@ private:
         // All" button or just apply it to the toggles. Actually, let's use
         // FormPopup for a more comprehensive configuration.
         std::vector<FormField> fields = {
-            {"Parallel Downloads",
-             "Enable downloading multiple packages at once",
-             DataStore::instance().pacman_cfg.parallel_downloads ? "true"
-                                                                 : "false",
+            {"Enable Testing",
+             "Enable testing repository for cutting-edge packages",
+             DataStore::instance().repo_cfg.enable_testing ? "true" : "false",
              5, FieldType::Boolean},
-            {"Max Parallel", "Number of concurrent downloads",
-             std::to_string(DataStore::instance().pacman_cfg.max_parallel), 2,
+            {"Enable Multilib", "Enable 32-bit package repository",
+             DataStore::instance().repo_cfg.enable_multilib ? "true" : "false",
+             5, FieldType::Boolean},
+            {"Parallel Downloads", "Number of concurrent downloads",
+             std::to_string(DataStore::instance().repo_cfg.parallel_downloads), 2,
              FieldType::Text},
-            {"Color", "Enable colorized pacman output",
-             DataStore::instance().pacman_cfg.color ? "true" : "false", 5,
+            {"Color", "Enable colorized package output",
+             DataStore::instance().repo_cfg.color ? "true" : "false", 5,
              FieldType::Boolean},
-            {"Check Space", "Check for available disk space before installing",
-             DataStore::instance().pacman_cfg.check_space ? "true" : "false", 5,
-             FieldType::Boolean},
-            {"Verbose Lists", "Show more detailed package lists",
-             DataStore::instance().pacman_cfg.verbose_pkg_lists ? "true"
-                                                                : "false",
+            {"ILoveCandy", "Easter egg animation",
+             DataStore::instance().repo_cfg.ilovecandy ? "true" : "false",
              5, FieldType::Boolean}};
-        if (FormPopup::show("Pacman Settings", fields)) {
-          DataStore::instance().pacman_cfg.parallel_downloads =
+        if (FormPopup::show("Repo Settings", fields)) {
+          DataStore::instance().repo_cfg.enable_testing =
               (fields[0].value == "true" || fields[0].value == "1" ||
                fields[0].value == "y");
+          DataStore::instance().repo_cfg.enable_multilib =
+              (fields[1].value == "true" || fields[1].value == "1" ||
+               fields[1].value == "y");
           try {
-            DataStore::instance().pacman_cfg.max_parallel =
-                std::stoi(fields[1].value);
-          } catch (...) {
-          }
-          DataStore::instance().pacman_cfg.color =
-              (fields[2].value == "true" || fields[2].value == "1" ||
-               fields[2].value == "y");
-          DataStore::instance().pacman_cfg.check_space =
+            DataStore::instance().repo_cfg.parallel_downloads =
+                std::stoi(fields[2].value);
+          } catch (...) {}
+          DataStore::instance().repo_cfg.color =
               (fields[3].value == "true" || fields[3].value == "1" ||
                fields[3].value == "y");
-          DataStore::instance().pacman_cfg.verbose_pkg_lists =
+          DataStore::instance().repo_cfg.ilovecandy =
               (fields[4].value == "true" || fields[4].value == "1" ||
                fields[4].value == "y");
         }

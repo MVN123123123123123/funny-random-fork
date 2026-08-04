@@ -18,12 +18,10 @@
 #include "pages/kernels_page.hpp"
 #include "pages/bootloader_page.hpp"
 #include "pages/timedate_page.hpp"
-#include "pages/audio.hpp"
 #include "pages/services.hpp"
 #include "pages/additional_packages_page.hpp"
 #include "pages/install_validator.hpp"
 #include "pages/installer_backend.hpp"
-#include "pages/fowo_page.hpp"
 
 // Variables
 #include "../../variables/regions.hpp"
@@ -33,7 +31,6 @@ MainMenu::MainMenu(const std::vector<GPUInfo>& gpus,
                    const std::vector<WifiNetwork>& wifi,
                    const std::vector<TZRegion>& tz) {
     add_page("Installer Language",          new LanguagePage());
-    add_page("Fowo Configuration",          new FowoPage());
     add_page("Mirror Configuration",        new MirrorPage());
     add_page("Keyboard and Locale",         new KeyboardLocalePage());
     add_page("Storage Device Configuration", new DiskPage());
@@ -45,7 +42,6 @@ MainMenu::MainMenu(const std::vector<GPUInfo>& gpus,
     add_page("Kernels",                     new KernelsPage());
     add_page("Bootloader",                  new BootloaderPage());
     add_page("Time and Date",               new TimeDatePage(tz.empty() ? get_regions() : tz));
-    add_page("Audio",                       new AudioPage());
     add_page("Services",                    new ServicesPage());
     add_page("Additional Packages",         new AdditionalPackagesPage());
 
@@ -369,7 +365,7 @@ void MainMenu::handle_action(const std::string &label) {
     wrefresh(win_content_);
     
     if (!YesNoPopup::show("Confirm Installation",
-          "This will install Arch Linux with the above settings.",
+          "This will install Fowo Linux with the above settings.",
           "ALL DATA on target partitions will be OVERWRITTEN!")) {
       return; // User cancelled
     }

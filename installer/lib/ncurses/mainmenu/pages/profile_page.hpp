@@ -160,6 +160,50 @@ public:
           }
         }
       }
+
+      // ── Fowo Installation Mode ──
+      std::vector<ListOption> mode_opts = {
+          {"Normal", "Normal (FedOwOra) - Standard Fedora dnf-based with systemd", ds.fowo_install_mode == "Normal"},
+          {"Master", "Master (FeOwOra) - Minimal fowo-based OS", ds.fowo_install_mode == "Master"}
+      };
+
+      if (ListSelectPopup::show("Fowo Installation Mode",
+                                {"Select your installation mode:"},
+                                mode_opts, false, false)) {
+        for (auto &o : mode_opts)
+          if (o.selected)
+            ds.fowo_install_mode = o.value;
+
+        if (ds.fowo_install_mode == "Master") {
+          std::vector<ListOption> init_opts = {
+              {"systemd", "systemd (default)", ds.fowo_init_choice == "systemd"},
+              {"openrc", "OpenRC", ds.fowo_init_choice == "openrc"},
+              {"runit", "runit", ds.fowo_init_choice == "runit"},
+              {"diy", "Do It Yourself (DIY)", ds.fowo_init_choice == "diy"}
+          };
+
+          if (ListSelectPopup::show("Select Init System",
+                                    {"Choose the init system for Master mode."},
+                                    init_opts, false, false)) {
+            for (auto &o : init_opts)
+              if (o.selected)
+                ds.fowo_init_choice = o.value;
+          }
+
+          std::vector<ListOption> core_opts = {
+              {"coreutils", "coreutils + bash", ds.fowo_core_choice == "coreutils"},
+              {"busybox", "busybox (minimal)", ds.fowo_core_choice == "busybox"}
+          };
+
+          if (ListSelectPopup::show("Select Core Utilities",
+                                    {"Choose core utilities for Master mode."},
+                                    core_opts, false, false)) {
+            for (auto &o : core_opts)
+              if (o.selected)
+                ds.fowo_core_choice = o.value;
+          }
+        }
+      }
       return true;
     }
     return false;

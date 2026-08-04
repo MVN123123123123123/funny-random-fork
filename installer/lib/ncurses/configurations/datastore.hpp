@@ -33,12 +33,12 @@ struct ReflectorConfig {
     std::string sort = "rate";
 };
 
-struct PacmanSettings {
-    bool parallel_downloads = true;
-    int max_parallel = 5;
+struct RepoSettings {
+    bool enable_testing = false;
+    bool enable_multilib = true;
+    int parallel_downloads = 5;
     bool color = true;
-    bool check_space = true;
-    bool verbose_pkg_lists = true;
+    bool ilovecandy = false;
 };
 
 struct DiskPartition {
@@ -99,7 +99,7 @@ public:
     // Mirror Configuration
     std::vector<MirrorItem> mirrors;
     ReflectorConfig reflector_cfg;
-    PacmanSettings pacman_cfg;
+    RepoSettings repo_cfg;
 
     // Storage Configuration
     std::vector<DiskInfo> disks;
@@ -129,7 +129,7 @@ public:
     // ── NEW FIELDS ──────────────────────────────────────────────────────
 
     // Hostname
-    std::string hostname = "archlinux";
+    std::string hostname = "fowolinux";
 
     // Bootloader: "GRUB", "systemd-boot", "None"
     std::string bootloader = "GRUB";

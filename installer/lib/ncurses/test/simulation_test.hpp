@@ -30,25 +30,11 @@ struct Disk {
 inline std::vector<Disk> get_disks() {
     return {
         {
-            "/dev/sda", "Samsung SSD 860 EVO", 122682, "gpt",
+            "/dev/sda", "Virtual Disk", 51200, "gpt",
             {
                 {"sda1", "/boot/efi", 512,   "fat32", "boot,esp"},
-                {"sda2", "/",         51200, "ext4",  ""},
-                {"sda3", "/home",     62970, "ext4",  ""},
-                {"sda4", "[SWAP]",    8000,  "swap",  "swap"},
-            }
-        },
-        {
-            "/dev/sdb", "WD Blue 1TB", 953869, "",
-            {} // clean disk, no table
-        },
-        {
-            "/dev/nvme0n1", "Samsung 970 EVO Plus 500GB", 476940, "gpt",
-            {
-                {"nvme0n1p1", "/boot/efi", 512,    "fat32", "boot,esp"},
-                {"nvme0n1p2", "/",         204800, "btrfs", ""},
-                {"nvme0n1p3", "/home",     255628, "btrfs", ""},
-                {"nvme0n1p4", "[SWAP]",    16000,  "swap",  "swap"},
+                {"sda2", "/",         46688, "ext4",  ""},
+                {"sda3", "[SWAP]",    4000,  "swap",  "swap"},
             }
         },
     };
@@ -70,7 +56,6 @@ struct NetworkInterface {
 inline std::vector<NetworkInterface> get_network_interfaces() {
     return {
         {"eth0",  "Ethernet", true,  "192.168.1.100", "AA:BB:CC:DD:EE:01", "192.168.1.1", "1.1.1.1", true},
-        {"wlan0", "Wireless", false, "",              "AA:BB:CC:DD:EE:02", "",            "",        true},
         {"lo",    "Loopback", true,  "127.0.0.1",     "00:00:00:00:00:00", "",            "",        true},
     };
 }
@@ -85,15 +70,7 @@ struct WifiNet {
 };
 
 inline std::vector<WifiNet> get_wifi_networks() {
-    return {
-        {"MikuNet_5G",        92, true,  false},
-        {"MikuNet",           78, true,  false},
-        {"Neighbor_WiFi",     45, true,  false},
-        {"CoffeeShop_Free",   60, false, false},
-        {"DIRECT-printer",    30, false, false},
-        {"5G_Home_Network",   55, true,  false},
-        {"eduroam",           70, true,  false},
-    };
+    return {};
 }
 
 // ── Language List ───────────────────────────────────────────────────────────
@@ -181,10 +158,6 @@ struct Kernel {
 inline std::vector<Kernel> get_kernels() {
     return {
         {"linux",          "Default Linux kernel and modules"},
-        {"linux-lts",      "Long-term support Linux kernel"},
-        {"linux-zen",      "Zen patched kernel for desktop use"},
-        {"linux-hardened", "Security-focused Linux kernel"},
-        {"linux-rt",       "Real-time Linux kernel"},
     };
 }
 
@@ -215,13 +188,10 @@ struct Mirror {
 
 inline std::vector<Mirror> get_mirrors() {
     return {
-        {"https://geo.mirror.pkgbuild.com/$repo/os/$arch",        "Worldwide",   true},
-        {"https://mirror.rackspace.com/archlinux/$repo/os/$arch",  "United States", true},
-        {"https://ftp.jaist.ac.jp/pub/Linux/ArchLinux/$repo/os/$arch", "Japan",   false},
-        {"https://mirror.osbeck.com/archlinux/$repo/os/$arch",     "Sweden",      false},
-        {"https://archlinux.thaller.ws/$repo/os/$arch",            "Germany",     true},
-        {"https://mirror.aarnet.edu.au/pub/archlinux/$repo/os/$arch", "Australia", false},
-        {"https://mirror.premi.st/archlinux/$repo/os/$arch",       "Singapore",   false},
+        {"https://mirror.fowo.org/repo/$repo/os/$arch",            "Worldwide",   true},
+        {"https://us.mirror.fowo.org/repo/$repo/os/$arch",         "United States", true},
+        {"https://jp.mirror.fowo.org/repo/$repo/os/$arch",         "Japan",       false},
+        {"https://eu.mirror.fowo.org/repo/$repo/os/$arch",         "Germany",     true},
     };
 }
 
@@ -235,8 +205,7 @@ struct GPU {
 
 inline std::vector<GPU> get_gpus() {
     return {
-        {"NVIDIA GeForce RTX 3070", "NVIDIA", "nvidia"},
-        {"Intel UHD Graphics 630",  "Intel",  "xf86-video-intel"},
+        {"Virtio GPU", "Virtual", ""},
     };
 }
 

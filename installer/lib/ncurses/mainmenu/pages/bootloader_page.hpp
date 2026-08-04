@@ -20,8 +20,6 @@ public:
     options_ = {
         {"GRUB", "The GNU Grand Unified Bootloader. Highly compatible and "
                  "feature-rich."},
-        {"systemd-boot",
-         "A simple UEFI boot manager. Fast and minimalist. (UEFI only)"},
         {"None", "I will handle this myself. (Expert only)"}};
 
     // Sync initial selection from DataStore
@@ -47,11 +45,6 @@ public:
 
     // UEFI/BIOS indicator
     mvwprintw(win, 2, 2, "Boot Mode: %s", ds.is_uefi ? "UEFI" : "BIOS/Legacy");
-    if (!ds.is_uefi && ds.bootloader == "systemd-boot") {
-      wattron(win, COLOR_PAIR(CP_CHECKBOX_OFF) | A_BOLD);
-      mvwprintw(win, 2, 35, "(systemd-boot requires UEFI!)");
-      wattroff(win, COLOR_PAIR(CP_CHECKBOX_OFF) | A_BOLD);
-    }
 
     for (int i = 0; i < (int)options_.size(); i++) {
       int y = 4 + i * 2;
