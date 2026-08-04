@@ -2,4 +2,4 @@
 #pragma once
 #define VERSION_ID "0.0.1"
 #define VERSION_LICENSE "MIT"
-#define VERSION_AUTHOR "Mizumo-prjkt"
+#define VERSION_AUTHOR "Mizumo-prjkt + MVN123123123123123"
