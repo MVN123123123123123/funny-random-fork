@@ -15,7 +15,7 @@
 >
 > DO NOT MAKE A DUPLICATE AUR REPO, `uli-git` is the only official AUR Repo for this Project, unless announced otherwise. I will also request a takedown if an unauthorized AUR repo is made. Also, the maintainer should be `mizumo_prjkt` on the AUR Account.
 >
-> **UPDATE**: The feature regarding on the distro agnostic install features have been revoked, since other distros tend to be messy, and it's a pain in the butt to maintain. But i could reconsider again in the future, but for now, **it's Arch Linux only.**
+> **UPDATE**: The feature regarding on the distro agnostic install features have been revoked, since other distros tend to be messy, and it's a pain in the butt to maintain. But i could reconsider again in the future, but for now, ~~**it's Arch Linux only.**~~ not any more, as of now it will be a FedOwOra installer. so the old repo + this one is two distro.
 
 
 HarukaInstaller, formerly known as ULI or Universal Linux Installer, is yet another Linux Installer, that aims to of course, install a Linux Distro, but with "unsafe" C++
