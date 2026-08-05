@@ -54,6 +54,7 @@ set(NCURSES_LIB_DIR ${INSTALLER_DIR}/lib/ncurses)
 add_library(ncurseslib OBJECT
     ${NCURSES_LIB_DIR}/ncurseslib.cpp
     ${NCURSES_LIB_DIR}/mainmenu/mainmenu.cpp
+    ${NCURSES_LIB_DIR}/language/language_engine.cpp
 )
 target_include_directories(ncurseslib PUBLIC
     ${NCURSES_LIB_DIR}
@@ -62,6 +63,7 @@ target_include_directories(ncurseslib PUBLIC
     ${NCURSES_LIB_DIR}/test
     ${NCURSES_LIB_DIR}/help
     ${NCURSES_LIB_DIR}/versioning
+    ${NCURSES_LIB_DIR}/language
 )
 
 # ── Hardware detection library (object library) ─────────────────────────────

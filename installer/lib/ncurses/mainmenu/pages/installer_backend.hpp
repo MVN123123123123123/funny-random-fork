@@ -113,7 +113,19 @@ public:
         }
 
         // ── Build package list for Base ──
-        std::string base_pkgs = "kernel grub2-pc grub2-efi-x64 util-linux passwd nano iproute iputils e2fsprogs dosfstools parted xfsprogs";
+        std::string base_pkgs = "grub2-pc grub2-efi-x64 util-linux passwd nano iproute iputils e2fsprogs dosfstools parted xfsprogs";
+        
+        bool kernel_selected = false;
+        for (const auto& k : ds.kernels) {
+            if (k.selected) {
+                base_pkgs += " " + k.package;
+                kernel_selected = true;
+            }
+        }
+        if (!kernel_selected) {
+            base_pkgs += " kernel";
+        }
+
         for (const auto& pkg : ds.additional_packages) {
             base_pkgs += " " + pkg;
         }
@@ -451,6 +463,39 @@ chmod +x /sbin/init
 
         ss << "Extra Pkgs:  " << ds.additional_packages.size() << "\n";
 
+        return ss.str();
+    }
+
+    // Generate JSON string for config export
+    static std::string generate_json() {
+        auto& ds = DataStore::instance();
+        std::ostringstream ss;
+        ss << "{\n";
+        ss << "  \"hostname\": \"" << ds.hostname << "\",\n";
+        ss << "  \"timezone\": \"" << ds.timezone() << "\",\n";
+        ss << "  \"bootloader\": \"" << ds.bootloader << "\",\n";
+        ss << "  \"is_uefi\": " << (ds.is_uefi ? "true" : "false") << ",\n";
+        ss << "  \"fowo_install_mode\": \"" << ds.fowo_install_mode << "\",\n";
+        ss << "  \"zram_enabled\": " << (ds.zram_enabled ? "true" : "false") << ",\n";
+        ss << "  \"zswap_enabled\": " << (ds.zswap_enabled ? "true" : "false") << ",\n";
+        ss << "  \"audio_system\": \"" << ds.audio_system << "\",\n";
+        ss << "  \"selected_de\": \"" << ds.selected_de << "\",\n";
+        ss << "  \"selected_de_flavor\": \"" << ds.selected_de_flavor << "\",\n";
+        
+        ss << "  \"additional_packages\": [";
+        for (size_t i = 0; i < ds.additional_packages.size(); ++i) {
+            ss << "\"" << ds.additional_packages[i] << "\"";
+            if (i < ds.additional_packages.size() - 1) ss << ", ";
+        }
+        ss << "],\n";
+        
+        ss << "  \"server_components\": [";
+        for (size_t i = 0; i < ds.server_components.size(); ++i) {
+            ss << "\"" << ds.server_components[i] << "\"";
+            if (i < ds.server_components.size() - 1) ss << ", ";
+        }
+        ss << "]\n";
+        ss << "}\n";
         return ss.str();
     }
 };

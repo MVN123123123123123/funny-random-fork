@@ -316,13 +316,22 @@ bool MainMenu::handle_action(const std::string &label) {
     mvwprintw(win_content_, y++, 4, "Users:       %zu", ds.users.size());
     mvwprintw(win_content_, y++, 4, "Extra Pkgs:  %zu", ds.additional_packages.size());
     std::string config_summary = InstallerBackend::generate_summary();
-    FILE* f = fopen("/var/log/haruka_install.conf", "w");
-    if (f) {
-      fprintf(f, "%s", config_summary.c_str());
-      fclose(f);
+    std::string config_json = InstallerBackend::generate_json();
+    
+    FILE* f_conf = fopen("/var/log/haruka_install.conf", "w");
+    if (f_conf) {
+      fprintf(f_conf, "%s", config_summary.c_str());
+      fclose(f_conf);
     }
+    
+    FILE* f_json = fopen("/tmp/haruka_install.json", "w");
+    if (f_json) {
+      fprintf(f_json, "%s", config_json.c_str());
+      fclose(f_json);
+    }
+    
     NcursesLib::print_center_attr(win_content_, getmaxy(win_content_) - 4,
-                                  "Configuration saved to /var/log/haruka_install.conf",
+                                  "Configuration saved to /var/log/haruka_install.conf and /tmp/haruka_install.json",
                                   COLOR_PAIR(CP_CHECKBOX_ON) | A_BOLD);
     wrefresh(win_content_);
     napms(2000);
@@ -399,36 +408,38 @@ bool MainMenu::handle_action(const std::string &label) {
       wattroff(win_content_, COLOR_PAIR(CP_CHECKBOX_ON));
       mvwprintw(win_content_, getmaxy(win_content_) - 1, 4, "Step %d/%d", i + 1, total);
       
-      // Log the command
-      std::string display_cmd = commands[i];
       int max_w = getmaxx(win_content_) - 8;
-      if ((int)display_cmd.size() > max_w) display_cmd = display_cmd.substr(0, max_w - 3) + "...";
-      log_history.push_back("> " + display_cmd);
-      
-      int start_idx = 0;
-      int available_lines = max_log_y - 2;
-      if ((int)log_history.size() > available_lines) {
-          start_idx = log_history.size() - available_lines;
-      }
-      
-      // Clear log area
-      for (int sy = 2; sy < max_log_y; sy++) {
-          mvwhline(win_content_, sy, 4, ' ', max_w + 4);
-      }
-      
-      for (int sy = 0; sy < (int)log_history.size() - start_idx; sy++) {
-          wattron(win_content_, COLOR_PAIR(CP_ACTION_ITEM));
-          mvwprintw(win_content_, 2 + sy, 4, "%s", log_history[start_idx + sy].c_str());
-          wattroff(win_content_, COLOR_PAIR(CP_ACTION_ITEM));
-      }
-      
-      wrefresh(win_content_);
+      auto update_log_view = [&](const std::string& line_str) {
+          std::string display_line = line_str;
+          if ((int)display_line.size() > max_w) display_line = display_line.substr(0, max_w - 3) + "...";
+          log_history.push_back(display_line);
+          
+          int start_idx = 0;
+          int available_lines = max_log_y - 2;
+          if ((int)log_history.size() > available_lines) {
+              start_idx = log_history.size() - available_lines;
+          }
+          
+          // Clear log area
+          for (int sy = 2; sy < max_log_y; sy++) {
+              mvwhline(win_content_, sy, 4, ' ', max_w + 4);
+          }
+          
+          for (int sy = 0; sy < (int)log_history.size() - start_idx; sy++) {
+              wattron(win_content_, COLOR_PAIR(CP_ACTION_ITEM));
+              mvwprintw(win_content_, 2 + sy, 4, "%s", log_history[start_idx + sy].c_str());
+              wattroff(win_content_, COLOR_PAIR(CP_ACTION_ITEM));
+          }
+          wrefresh(win_content_);
+      };
+
+      update_log_view("> " + commands[i]);
       
       // Execute (in production) or simulate
       #ifdef TESTUI
         napms(200); // Simulate delay in test mode
       #else
-        InstallerBackend::execute_command(commands[i], [](const std::string&) {});
+        InstallerBackend::execute_command(commands[i], update_log_view);
       #endif
     }
     

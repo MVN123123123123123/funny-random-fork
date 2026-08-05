@@ -3,6 +3,7 @@
 #include "page.hpp"
 #include "../../ncurseslib.hpp"
 #include "../../configurations/datastore.hpp"
+#include "../../language/language_engine.hpp"
 #include <vector>
 #include <string>
 
@@ -13,7 +14,7 @@ class LanguagePage : public Page {
 public:
     LanguagePage() {}
 
-    std::string title() const override { return "Installer Language"; }
+    std::string title() const override { return _TR("Language Selection"); }
 
     void render(WINDOW* win) override {
         int h, w;
@@ -21,7 +22,7 @@ public:
         auto& ds = DataStore::instance();
 
         wattron(win, COLOR_PAIR(CP_SECTION_TITLE) | A_BOLD);
-        mvwprintw(win, 1, 2, "Select Installer Language");
+        mvwprintw(win, 1, 2, _TR("Select Language").c_str());
         wattroff(win, COLOR_PAIR(CP_SECTION_TITLE) | A_BOLD);
 
         if (ds.selected_language_idx < (int)ds.languages.size()) {
@@ -59,7 +60,11 @@ public:
         auto& ds = DataStore::instance();
         if (ch == KEY_UP && selected_ > 0) { selected_--; return true; }
         if (ch == KEY_DOWN && selected_ < (int)ds.languages.size() - 1) { selected_++; return true; }
-        if (ch == '\n' || ch == KEY_ENTER) { ds.selected_language_idx = selected_; return true; }
+        if (ch == '\n' || ch == KEY_ENTER) { 
+            ds.selected_language_idx = selected_; 
+            LanguageEngine::instance().load_language(ds.languages[selected_].name);
+            return true; 
+        }
         return false;
     }
 };
