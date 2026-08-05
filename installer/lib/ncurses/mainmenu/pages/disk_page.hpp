@@ -369,7 +369,11 @@ private:
               std::to_string(ds.disks[selected_disk_].partitions.size() + 1);
           np.mount_point = "/mnt/new";
           np.filesystem = "ext4";
-          np.size_mb = std::stoull(size_str);
+          try {
+              np.size_mb = std::stoull(size_str);
+          } catch (...) {
+              np.size_mb = 1024; // Default on invalid input
+          }
           ds.disks[selected_disk_].partitions.push_back(np);
         }
       } else

@@ -110,25 +110,9 @@ private:
   }
 
   std::string normalize_url(std::string url) {
-    // Strip any existing variables to prevent duplication or malformed strings
-    size_t pos = url.find("$repo");
-    if (pos != std::string::npos)
-      url = url.substr(0, pos);
-
-    pos = url.find("$arch");
-    if (pos != std::string::npos)
-      url = url.substr(0, pos);
-
-    // Strip trailing slashes and dangling "os" directory
+    // Strip trailing slashes
     while (!url.empty() && url.back() == '/')
       url.pop_back();
-    if (url.length() >= 3 && url.substr(url.length() - 3) == "/os") {
-      url = url.substr(0, url.length() - 3);
-    }
-
-    if (!url.empty() && url.back() != '/')
-      url += "/";
-    url += "$repo/os/$arch";
 
     return url;
   }
@@ -144,7 +128,7 @@ private:
     NcursesLib::draw_hline(win, 3, 1, w - 2);
 
     const char *options[] = {
-        "Auto fetch possible server points (using reflector)",
+        "Auto fetch possible server points",
         "Manual Input of Repo", "Configure Repo Settings"};
 
     for (int i = 0; i < 3; i++) {
@@ -176,9 +160,9 @@ private:
               DataStore::instance().reflector_cfg.sort.c_str());
 
     const char *actions[] = {"Update Countries", "Change Number",
-                             "Change Sort",      "[ RUN REFLECTOR ]",
+                             "Change Sort",
                              "[ SAVE & BACK ]",  "[ DO NOT SAVE & BACK ]"};
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 5; i++) {
       int y = 10 + i;
       if (i == selected_) {
         wattron(win, COLOR_PAIR(CP_HIGHLIGHT));
@@ -205,9 +189,7 @@ private:
     wattroff(win, COLOR_PAIR(CP_INPUT_FIELD));
 
     // Disclaimer (stacked below input)
-    wattron(win, A_DIM);
     mvwprintw(win, 5, 4, "Note: Protocols (https, ftp, etc.) are required.");
-    mvwprintw(win, 6, 4, "$repo/os/$arch is added if missing.");
     wattroff(win, A_DIM);
 
     // Render Scrollable List
@@ -245,7 +227,7 @@ private:
     getmaxyx(win, h, w);
 
     wattron(win, COLOR_PAIR(CP_SECTION_TITLE) | A_BOLD);
-    mvwprintw(win, 1, 2, "Pacman Configuration");
+    mvwprintw(win, 1, 2, "DNF Configuration");
     wattroff(win, COLOR_PAIR(CP_SECTION_TITLE) | A_BOLD);
 
     auto draw_toggle = [&](int y, const char *label, bool val, int idx) {
@@ -259,14 +241,12 @@ private:
       }
     };
 
-    draw_toggle(4, "Enable Testing Repo",
-                DataStore::instance().repo_cfg.enable_testing, 0);
-    draw_toggle(5, "Enable Multilib",
-                DataStore::instance().repo_cfg.enable_multilib, 1);
+    draw_toggle(4, "Fastest Mirror",
+                DataStore::instance().repo_cfg.fastestmirror, 0);
+    draw_toggle(5, "Default Yes",
+                DataStore::instance().repo_cfg.defaultyes, 1);
     draw_toggle(6, "Enable Color Output",
                 DataStore::instance().repo_cfg.color, 2);
-    draw_toggle(7, "ILoveCandy (Pacman-style animation)",
-                DataStore::instance().repo_cfg.ilovecandy, 3);
 
     const char *extras[] = {"[ SAVE & BACK ]", "[ DO NOT SAVE & BACK ]"};
     for (int i = 0; i < 2; i++) {
@@ -379,9 +359,7 @@ private:
                   }
               }
           }
-      } else if (selected_ == 3) {
-        // RUN: In a real app, this would show a progress popup
-      } else if (selected_ == 4 || selected_ == 5) {
+      } else if (selected_ == 3 || selected_ == 4) {
         section_ = MirrorSection::Main;
         selected_ = 0;
       }
@@ -443,10 +421,6 @@ private:
         if (is_valid_protocol(manual_url_)) {
           std::string msg = "Add this repository to the list?";
           std::string note = "";
-          if (manual_url_.find("$repo") == std::string::npos) {
-            note = "Note: $repo/os/$arch will be added automatically\nsince it "
-                   "was not provided.";
-          }
 
           if (YesNoPopup::show("Confirm Add", msg, note)) {
             manual_list_.items.push_back(normalize_url(manual_url_));
@@ -502,27 +476,24 @@ private:
         // All" button or just apply it to the toggles. Actually, let's use
         // FormPopup for a more comprehensive configuration.
         std::vector<FormField> fields = {
-            {"Enable Testing",
-             "Enable testing repository for cutting-edge packages",
-             DataStore::instance().repo_cfg.enable_testing ? "true" : "false",
+            {"Fastest Mirror",
+             "Enable fastestmirror plugin",
+             DataStore::instance().repo_cfg.fastestmirror ? "true" : "false",
              5, FieldType::Boolean},
-            {"Enable Multilib", "Enable 32-bit package repository",
-             DataStore::instance().repo_cfg.enable_multilib ? "true" : "false",
+            {"Default Yes", "Set defaultyes=True in dnf.conf",
+             DataStore::instance().repo_cfg.defaultyes ? "true" : "false",
              5, FieldType::Boolean},
             {"Parallel Downloads", "Number of concurrent downloads",
              std::to_string(DataStore::instance().repo_cfg.parallel_downloads), 2,
              FieldType::Text},
             {"Color", "Enable colorized package output",
              DataStore::instance().repo_cfg.color ? "true" : "false", 5,
-             FieldType::Boolean},
-            {"ILoveCandy", "Easter egg animation",
-             DataStore::instance().repo_cfg.ilovecandy ? "true" : "false",
-             5, FieldType::Boolean}};
+             FieldType::Boolean}};
         if (FormPopup::show("Repo Settings", fields)) {
-          DataStore::instance().repo_cfg.enable_testing =
+          DataStore::instance().repo_cfg.fastestmirror =
               (fields[0].value == "true" || fields[0].value == "1" ||
                fields[0].value == "y");
-          DataStore::instance().repo_cfg.enable_multilib =
+          DataStore::instance().repo_cfg.defaultyes =
               (fields[1].value == "true" || fields[1].value == "1" ||
                fields[1].value == "y");
           try {
@@ -532,9 +503,6 @@ private:
           DataStore::instance().repo_cfg.color =
               (fields[3].value == "true" || fields[3].value == "1" ||
                fields[3].value == "y");
-          DataStore::instance().repo_cfg.ilovecandy =
-              (fields[4].value == "true" || fields[4].value == "1" ||
-               fields[4].value == "y");
         }
       } else if (selected_ == 4 || selected_ == 5) {
         section_ = MirrorSection::Main;

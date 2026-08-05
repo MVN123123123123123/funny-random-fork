@@ -34,11 +34,10 @@ struct ReflectorConfig {
 };
 
 struct RepoSettings {
-    bool enable_testing = false;
-    bool enable_multilib = true;
-    int parallel_downloads = 5;
+    bool fastestmirror = true;
+    bool defaultyes = true;
+    int  parallel_downloads = 10;
     bool color = true;
-    bool ilovecandy = false;
 };
 
 struct DiskPartition {

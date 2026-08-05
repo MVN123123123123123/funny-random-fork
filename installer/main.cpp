@@ -3,7 +3,11 @@
 // detect real hardware. For now, it uses simulation data as a placeholder
 // but includes proper UEFI detection and production gating.
 
-#include "lib/ncurses/test/simulation_test.hpp"
+#include "lib/ncurses/configurations/config_defaults.hpp"
+#include "lib/hardware/cpu/cpudetect.hpp"
+#include "lib/hardware/gpu/gpudetect.hpp"
+#include "lib/hardware/network/network.hpp"
+#include "lib/hardware/storage/drivedetect.hpp"
 #include "lib/ncurses/ncurseslib.hpp"
 #include "lib/ncurses/mainmenu/mainmenu.hpp"
 #include "lib/ncurses/configurations/datastore.hpp"
@@ -25,20 +29,16 @@ int main() {
     bool is_uefi = detect_uefi();
 
     // ── Load data ───────────────────────────────────────────────────────
-    // TODO: Replace SimData calls with real hardware detection when
-    // the backend detection modules (hwdetect, drivedetect, etc.) are
-    // implemented. For now, simulation data is used as a functional
-    // placeholder so the TUI can be developed and tested.
-    auto sim_langs     = SimData::get_languages();
-    auto sim_mirrors   = SimData::get_mirrors();
-    auto sim_kblayouts = SimData::get_keyboard_layouts();
-    auto sim_locales   = SimData::get_locales();
-    auto sim_disks     = SimData::get_disks();
-    auto sim_networks  = SimData::get_network_interfaces();
-    auto sim_wifi      = SimData::get_wifi_networks();
-    auto sim_kernels   = SimData::get_kernels();
-    auto sim_gpus      = SimData::get_gpus();
-    auto sim_profiles  = SimData::get_profiles();
+    auto sim_langs     = ConfigDefaults::get_languages();
+    auto sim_mirrors   = ConfigDefaults::get_mirrors();
+    auto sim_kblayouts = ConfigDefaults::get_keyboard_layouts();
+    auto sim_locales   = ConfigDefaults::get_locales();
+    auto sim_disks     = StorageDetect::get_disks();
+    auto sim_networks  = NetworkDetect::get_interfaces();
+    auto sim_wifi      = NetworkDetect::get_wifi_networks();
+    auto sim_kernels   = ConfigDefaults::get_kernels();
+    auto sim_gpus      = GPUDetect::get_gpus();
+    auto sim_profiles  = ConfigDefaults::get_profiles();
 
     // ── Populate DataStore ──────────────────────────────────────────────
     auto& ds = DataStore::instance();

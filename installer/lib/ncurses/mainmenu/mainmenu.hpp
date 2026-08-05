@@ -62,7 +62,7 @@ private:
     void draw_content();
     void draw_status_bar();
     void handle_resize();
-    void handle_action(const std::string& label);
+    bool handle_action(const std::string& label);
 
     // Skip separator items
     void cursor_up();

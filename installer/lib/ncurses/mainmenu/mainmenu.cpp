@@ -286,7 +286,7 @@ void MainMenu::cursor_down() {
   } while (items_[sidebar_cursor_].label == "---");
 }
 
-void MainMenu::handle_action(const std::string &label) {
+bool MainMenu::handle_action(const std::string &label) {
   if (label == "Abort") {
     if (YesNoPopup::show("Confirm Abort", "Are you sure you want to exit HarukaInstaller?")) {
       werase(win_content_);
@@ -296,7 +296,9 @@ void MainMenu::handle_action(const std::string &label) {
                                     COLOR_PAIR(CP_CHECKBOX_OFF) | A_BOLD);
       wrefresh(win_content_);
       napms(1000);
+      return true;
     }
+    return false;
   } else if (label == "Save Config") {
     werase(win_content_);
     NcursesLib::draw_titled_box(win_content_, "Save Config");
@@ -313,11 +315,18 @@ void MainMenu::handle_action(const std::string &label) {
     mvwprintw(win_content_, y++, 4, "Root Pass:   %s", ds.root_password.empty() ? "NOT SET" : "Set");
     mvwprintw(win_content_, y++, 4, "Users:       %zu", ds.users.size());
     mvwprintw(win_content_, y++, 4, "Extra Pkgs:  %zu", ds.additional_packages.size());
+    std::string config_summary = InstallerBackend::generate_summary();
+    FILE* f = fopen("/var/log/haruka_install.conf", "w");
+    if (f) {
+      fprintf(f, "%s", config_summary.c_str());
+      fclose(f);
+    }
     NcursesLib::print_center_attr(win_content_, getmaxy(win_content_) - 4,
-                                  "Configuration summary displayed!",
+                                  "Configuration saved to /var/log/haruka_install.conf",
                                   COLOR_PAIR(CP_CHECKBOX_ON) | A_BOLD);
     wrefresh(win_content_);
     napms(2000);
+    return false;
   } else if (label == "INSTALL!") {
     // ── Step 1: Validation ──
     auto results = InstallValidator::validate();
@@ -343,7 +352,7 @@ void MainMenu::handle_action(const std::string &label) {
           "Press any key to continue.");
         wrefresh(win_content_);
         wgetch(win_content_);
-        return;
+        return false;
       }
       NcursesLib::print_center(win_content_, getmaxy(win_content_) - 2,
         "Press any key to continue.");
@@ -367,7 +376,7 @@ void MainMenu::handle_action(const std::string &label) {
     if (!YesNoPopup::show("Confirm Installation",
           "This will install Fowo Linux with the above settings.",
           "ALL DATA on target partitions will be OVERWRITTEN!")) {
-      return; // User cancelled
+      return false; // User cancelled
     }
 
     // ── Step 3: Execute installation ──
@@ -376,8 +385,8 @@ void MainMenu::handle_action(const std::string &label) {
     NcursesLib::draw_titled_box(win_content_, "Installing...");
     
     int total = (int)commands.size();
-    int log_y = 2;
     int max_log_y = getmaxy(win_content_) - 4;
+    std::vector<std::string> log_history;
     
     for (int i = 0; i < total; i++) {
       // Progress bar
@@ -391,23 +400,28 @@ void MainMenu::handle_action(const std::string &label) {
       mvwprintw(win_content_, getmaxy(win_content_) - 1, 4, "Step %d/%d", i + 1, total);
       
       // Log the command
-      if (log_y >= max_log_y) {
-        // Scroll up
-        for (int sy = 3; sy < max_log_y; sy++) {
-          // Simple scroll by redrawing
-        }
-        log_y = max_log_y - 1;
-      }
-      
-      // Show command (truncated)
       std::string display_cmd = commands[i];
       int max_w = getmaxx(win_content_) - 8;
       if ((int)display_cmd.size() > max_w) display_cmd = display_cmd.substr(0, max_w - 3) + "...";
+      log_history.push_back("> " + display_cmd);
       
-      wattron(win_content_, COLOR_PAIR(CP_ACTION_ITEM));
-      mvwprintw(win_content_, log_y, 4, "> %s", display_cmd.c_str());
-      wattroff(win_content_, COLOR_PAIR(CP_ACTION_ITEM));
-      log_y++;
+      int start_idx = 0;
+      int available_lines = max_log_y - 2;
+      if ((int)log_history.size() > available_lines) {
+          start_idx = log_history.size() - available_lines;
+      }
+      
+      // Clear log area
+      for (int sy = 2; sy < max_log_y; sy++) {
+          mvwhline(win_content_, sy, 4, ' ', max_w + 4);
+      }
+      
+      for (int sy = 0; sy < (int)log_history.size() - start_idx; sy++) {
+          wattron(win_content_, COLOR_PAIR(CP_ACTION_ITEM));
+          mvwprintw(win_content_, 2 + sy, 4, "%s", log_history[start_idx + sy].c_str());
+          wattroff(win_content_, COLOR_PAIR(CP_ACTION_ITEM));
+      }
+      
       wrefresh(win_content_);
       
       // Execute (in production) or simulate
@@ -425,7 +439,9 @@ void MainMenu::handle_action(const std::string &label) {
       "Press any key to exit.");
     wrefresh(win_content_);
     wgetch(win_content_);
+    return true; // Signal completion to exit installer
   }
+  return false;
 }
 
 void MainMenu::handle_resize() {
@@ -498,8 +514,8 @@ void MainMenu::run() {
           auto &item = items_[sidebar_cursor_];
           if (item.is_action) {
             if (ch == '\n' || ch == KEY_ENTER) {
-              handle_action(item.label);
-              if (item.label == "Abort") {
+              bool exit_req = handle_action(item.label);
+              if ((item.label == "Abort" || item.label == "INSTALL!") && exit_req) {
                 running = false;
               }
             }

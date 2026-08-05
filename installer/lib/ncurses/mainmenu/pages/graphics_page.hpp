@@ -2,15 +2,10 @@
 // graphics_page.hpp - Graphics Hardware detection and driver selection
 #include "../../ncurseslib.hpp"
 #include "../../configurations/datastore.hpp"
+#include "../../../hardware/gpu/gpudetect.hpp"
 #include "page.hpp"
 #include <string>
 #include <vector>
-
-struct GPUInfo {
-  std::string name;
-  std::string vendor;
-  std::string driver_rec;
-};
 
 class GraphicsPage : public Page {
   std::vector<GPUInfo> gpus_;
@@ -33,8 +28,23 @@ public:
     for (size_t i = 0; i < gpus_.size(); i++) {
       GPUDriverSelection sel;
       sel.gpu_name = gpus_[i].name;
-      sel.driver_package = "(none)";
-      sel.vulkan_package = "(none)";
+      std::string v = gpus_[i].vendor;
+      // Convert vendor to lower case for simpler matching
+      for(auto &c : v) c = tolower(c);
+      
+      if (v.find("amd") != std::string::npos || v.find("advanced micro devices") != std::string::npos) {
+          sel.driver_package = "xorg-x11-drv-amdgpu";
+          sel.vulkan_package = "mesa-vulkan-drivers";
+      } else if (v.find("nvidia") != std::string::npos) {
+          sel.driver_package = "akmod-nvidia xorg-x11-drv-nvidia-cuda";
+          sel.vulkan_package = "";
+      } else if (v.find("intel") != std::string::npos) {
+          sel.driver_package = "xorg-x11-drv-intel";
+          sel.vulkan_package = "mesa-vulkan-drivers";
+      } else {
+          sel.driver_package = "(none)";
+          sel.vulkan_package = "(none)";
+      }
       ds.gpu_drivers.push_back(sel);
     }
   }

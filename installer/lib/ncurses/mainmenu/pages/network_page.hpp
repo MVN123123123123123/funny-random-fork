@@ -5,26 +5,9 @@
 #include "page.hpp"
 #include "../../ncurseslib.hpp"
 #include "../../configurations/datastore.hpp"
+#include "../../../hardware/network/network.hpp"
 #include <vector>
 #include <string>
-
-struct NetIfaceInfo {
-    std::string name;
-    std::string type;        // "Ethernet" or "Wireless"
-    bool        connected;
-    std::string ip_address;
-    std::string mac_address;
-    std::string gateway;
-    std::string dns;
-    bool        use_dhcp;
-};
-
-struct WifiNetwork {
-    std::string ssid;
-    int         signal;      // 0-100
-    bool        secured;
-    bool        connected;
-};
 
 class NetworkPage : public Page {
     std::vector<NetIfaceInfo> ifaces_;
@@ -307,10 +290,15 @@ public:
                 auto& iface = ifaces_[selected_];
                 if (action_idx_ == 0) {
                     // Connect/Disconnect toggle
-                    iface.connected = !iface.connected;
-                    if (iface.connected && iface.ip_address.empty())
-                        iface.ip_address = "192.168.1." + std::to_string(100 + selected_);
-                    if (!iface.connected) iface.ip_address = "";
+                    if (iface.connected) {
+                        system(("nmcli device disconnect " + iface.name + " > /dev/null 2>&1").c_str());
+                        iface.connected = false;
+                        iface.ip_address = "";
+                    } else {
+                        system(("nmcli device connect " + iface.name + " > /dev/null 2>&1").c_str());
+                        iface.connected = true;
+                        iface.ip_address = "(reload to see ip)";
+                    }
                 } else if (action_idx_ == 1) {
                     // Open IP config overlay
                     focus_ = 4;
@@ -329,12 +317,24 @@ public:
             if (ch == KEY_UP && wifi_selected_ > 0) { wifi_selected_--; return true; }
             if (ch == KEY_DOWN && wifi_selected_ < (int)wifi_networks_.size() - 1) { wifi_selected_++; return true; }
             if (ch == '\n' || ch == KEY_ENTER) {
-                // "Connect" to selected WiFi (simulated)
-                for (auto& n : wifi_networks_) n.connected = false;
-                wifi_networks_[wifi_selected_].connected = true;
+                // "Connect" to selected WiFi using nmcli
+                auto& net = wifi_networks_[wifi_selected_];
                 auto& iface = ifaces_[selected_];
+                if (net.secured) {
+                    NcursesLib::draw_titled_box(win, "WiFi Password");
+                    mvwprintw(win, getmaxy(win)/2, 5, "Password for %s: ", net.ssid.c_str());
+                    std::string pass = NcursesLib::text_input(win, getmaxy(win)/2, 20 + net.ssid.length(), 20, 64);
+                    if (!pass.empty()) {
+                        system(("nmcli device wifi connect '" + net.ssid + "' password '" + pass + "' > /dev/null 2>&1").c_str());
+                    }
+                } else {
+                    system(("nmcli device wifi connect '" + net.ssid + "' > /dev/null 2>&1").c_str());
+                }
+                
+                for (auto& n : wifi_networks_) n.connected = false;
+                net.connected = true;
                 iface.connected = true;
-                iface.ip_address = "192.168.1." + std::to_string(100 + wifi_selected_);
+                iface.ip_address = "(reload to see ip)";
                 return true;
             }
             return false;

@@ -64,6 +64,22 @@ target_include_directories(ncurseslib PUBLIC
     ${NCURSES_LIB_DIR}/versioning
 )
 
+# ── Hardware detection library (object library) ─────────────────────────────
+set(HARDWARE_LIB_DIR ${INSTALLER_DIR}/lib/hardware)
+
+add_library(hardwarelib OBJECT
+    ${HARDWARE_LIB_DIR}/cpu/cpudetect.cpp
+    ${HARDWARE_LIB_DIR}/gpu/gpudetect.cpp
+    ${HARDWARE_LIB_DIR}/network/networkdetect.cpp
+    ${HARDWARE_LIB_DIR}/storage/drivedetect.cpp
+)
+target_include_directories(hardwarelib PUBLIC
+    ${HARDWARE_LIB_DIR}/cpu
+    ${HARDWARE_LIB_DIR}/gpu
+    ${HARDWARE_LIB_DIR}/network
+    ${HARDWARE_LIB_DIR}/storage
+)
+
 # ── Test UI executable ───────────────────────────────────────────────────────
 option(BUILD_TEST_UI "Build the ncurses TUI test program" ON)
 
@@ -85,7 +101,7 @@ if(BUILD_TEST_UI)
 endif()
 
 # ── Main installer executable ────────────────────────────────────────────────
-add_executable(haruka_installer ${INSTALLER_DIR}/main.cpp $<TARGET_OBJECTS:ncurseslib>)
+add_executable(haruka_installer ${INSTALLER_DIR}/main.cpp $<TARGET_OBJECTS:ncurseslib> $<TARGET_OBJECTS:hardwarelib>)
 target_include_directories(haruka_installer PRIVATE
     ${NCURSES_LIB_DIR}
     ${NCURSES_LIB_DIR}/mainmenu

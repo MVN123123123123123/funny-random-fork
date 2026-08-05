@@ -11,6 +11,16 @@
 
 class InstallerBackend {
 public:
+    static std::string escape_shell_arg(const std::string& arg) {
+        std::string escaped = "'";
+        for (char c : arg) {
+            if (c == '\'') escaped += "'\\''";
+            else escaped += c;
+        }
+        escaped += "'";
+        return escaped;
+    }
+
     using LogCallback = std::function<void(const std::string&)>;
 
     // Generate the list of installation steps as human-readable descriptions
@@ -46,6 +56,31 @@ public:
     static std::vector<std::string> generate_commands() {
         std::vector<std::string> cmds;
         auto& ds = DataStore::instance();
+
+        // ── Create and Format partitions ──
+        for (const auto& disk : ds.disks) {
+            for (const auto& part : disk.partitions) {
+                if (!part.mount_point.empty()) {
+                    std::string dev = part.device;
+                    if (dev.find("/dev/") != 0) dev = "/dev/" + dev;
+                    
+                    // Simple partition creation if device does not exist
+                    cmds.push_back("if [ ! -b " + dev + " ]; then parted -s " + disk.device + " mkpart primary " + part.filesystem + " 0% " + std::to_string(part.size_mb) + "MB || true; sleep 2; fi");
+                    
+                    if (part.filesystem == "ext4") {
+                        cmds.push_back("mkfs.ext4 -F " + dev + " || true");
+                    } else if (part.filesystem == "btrfs") {
+                        cmds.push_back("mkfs.btrfs -f " + dev + " || true");
+                    } else if (part.filesystem == "xfs") {
+                        cmds.push_back("mkfs.xfs -f " + dev + " || true");
+                    } else if (part.filesystem == "fat32" || part.filesystem == "vfat") {
+                        cmds.push_back("mkfs.vfat -F 32 " + dev + " || true");
+                    } else if (part.filesystem == "swap" || part.mount_point == "[SWAP]") {
+                        cmds.push_back("mkswap -f " + dev + " || true");
+                    }
+                }
+            }
+        }
 
         // ── Mount partitions ──
         // Find root partition
@@ -83,9 +118,40 @@ public:
             base_pkgs += " " + pkg;
         }
 
+        // DE/Profile packages
+        std::string de_pkgs = "";
+        if (ds.selected_de == "KDE Plasma") de_pkgs = "@kde-desktop-environment";
+        else if (ds.selected_de == "GNOME") de_pkgs = "@gnome-desktop";
+        else if (ds.selected_de == "XFCE") de_pkgs = "@xfce-desktop-environment";
+        
+        for (const auto& svc : ds.server_components) {
+            if (svc == "OpenSSH") de_pkgs += " openssh-server";
+            else if (svc == "Docker") de_pkgs += " docker";
+            else if (svc == "Nginx") de_pkgs += " nginx";
+        }
+        if (!de_pkgs.empty()) base_pkgs += " " + de_pkgs;
+
+        // Audio System
+        if (ds.audio_system == "PipeWire") {
+            base_pkgs += " pipewire pipewire-pulseaudio pipewire-alsa pipewire-jack wireplumber";
+        } else if (ds.audio_system == "PulseAudio") {
+            base_pkgs += " pulseaudio pulseaudio-utils";
+        }
+
+        // ZRAM
+        if (ds.zram_enabled) {
+            base_pkgs += " zram-generator";
+        }
+
+        // GPU drivers
+        for (const auto& gpu : ds.gpu_drivers) {
+            if (gpu.driver_package != "(none)" && !gpu.driver_package.empty()) base_pkgs += " " + gpu.driver_package;
+            if (gpu.vulkan_package != "(none)" && !gpu.vulkan_package.empty()) base_pkgs += " " + gpu.vulkan_package;
+        }
+
         // ── Bootstrap Fowo ──
         if (ds.fowo_install_mode == "Normal") {
-            cmds.push_back("dnf --use-host-config --installroot=/mnt --releasever=40 install -y @core systemd dnf " + base_pkgs);
+            cmds.push_back("dnf --use-host-config --installroot=/mnt --releasever=45 install -y @core systemd dnf " + base_pkgs);
             cmds.push_back("mkdir -p /mnt/usr/local/bin");
             cmds.push_back("cp /usr/local/bin/fowo /mnt/usr/local/bin/ || true");
         } else {
@@ -227,10 +293,24 @@ chmod +x /sbin/init
         }
 
         // ── Fstab ──
-        // Normally genfstab is part of arch-install-scripts. For Fowo we might not have it, 
-        // so we can emulate it or rely on a statically provided script.
-        // But for now we will keep genfstab assuming it's available in the live ISO.
-        cmds.push_back("genfstab -U /mnt >> /mnt/etc/fstab");
+        // Generate fstab using blkid since genfstab is not available on Fedora/Fowo
+        cmds.push_back("mkdir -p /mnt/etc");
+        cmds.push_back("touch /mnt/etc/fstab");
+        for (const auto& disk : ds.disks) {
+            for (const auto& part : disk.partitions) {
+                if (!part.mount_point.empty()) {
+                    std::string dev = part.device;
+                    if (dev.find("/dev/") != 0) dev = "/dev/" + dev;
+                    if (part.mount_point == "[SWAP]" || part.filesystem == "swap") {
+                        cmds.push_back("echo \"UUID=$(blkid -s UUID -o value " + dev + ") none swap defaults 0 0\" >> /mnt/etc/fstab");
+                    } else {
+                        std::string fs = part.filesystem;
+                        if (fs.empty()) fs = "auto";
+                        cmds.push_back("echo \"UUID=$(blkid -s UUID -o value " + dev + ") " + part.mount_point + " " + fs + " defaults 0 0\" >> /mnt/etc/fstab");
+                    }
+                }
+            }
+        }
 
         // ── Mount virtual filesystems for the rest of chroot commands ──
         cmds.push_back("mount -o bind /dev /mnt/dev");
@@ -262,23 +342,23 @@ chmod +x /sbin/init
         }
 
         // Hostname
-        cmds.push_back(chroot_cmd("echo " + ds.hostname + " > /etc/hostname"));
+        cmds.push_back(chroot_cmd("echo " + escape_shell_arg(ds.hostname) + " > /etc/hostname"));
         cmds.push_back(chroot_cmd("echo '127.0.0.1 localhost' >> /etc/hosts"));
         cmds.push_back(chroot_cmd("echo '::1       localhost' >> /etc/hosts"));
-        cmds.push_back(chroot_cmd("echo '127.0.1.1 " + ds.hostname + "' >> /etc/hosts"));
+        cmds.push_back(chroot_cmd("echo '127.0.1.1 " + escape_shell_arg(ds.hostname) + "' >> /etc/hosts"));
 
         // Root password
         if (!ds.root_password.empty()) {
-            cmds.push_back(chroot_cmd("echo 'root:" + ds.root_password + "' | chpasswd"));
+            cmds.push_back(chroot_cmd("echo 'root:'" + escape_shell_arg(ds.root_password) + " | chpasswd"));
         }
 
         // User accounts
         for (const auto& u : ds.users) {
             std::string useradd = "useradd -m";
             if (u.in_wheel) useradd += " -G wheel";
-            useradd += " " + u.username;
+            useradd += " " + escape_shell_arg(u.username);
             cmds.push_back(chroot_cmd(useradd));
-            cmds.push_back(chroot_cmd("echo '" + u.username + ":" + u.password + "' | chpasswd"));
+            cmds.push_back(chroot_cmd("echo " + escape_shell_arg(u.username + ":" + u.password) + " | chpasswd"));
         }
         // Enable sudo for wheel
         if (!ds.users.empty()) {
@@ -304,6 +384,12 @@ chmod +x /sbin/init
         // Enable services
         for (const auto& svc : ds.enabled_services) {
             cmds.push_back(chroot_cmd("systemctl enable " + svc + " || true"));
+        }
+
+        // ZRAM Configuration
+        if (ds.zram_enabled) {
+            cmds.push_back(chroot_cmd("mkdir -p /etc/systemd"));
+            cmds.push_back(chroot_cmd("echo -e '[zram0]\\nzram-size = ram / 2' > /etc/systemd/zram-generator.conf"));
         }
 
         // NTP
