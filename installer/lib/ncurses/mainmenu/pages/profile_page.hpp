@@ -2,6 +2,7 @@
 // profile_page.hpp - System Profile selection (Desktop/Server/Minimalist)
 #include "../../configurations/datastore.hpp"
 #include "../../ncurseslib.hpp"
+#include "../../popups.hpp"
 #include "page.hpp"
 #include <string>
 #include <vector>
@@ -74,6 +75,10 @@ public:
       }
       wattroff(win, COLOR_PAIR(CP_SEPARATOR));
     }
+
+    wattron(win, COLOR_PAIR(CP_SECTION_TITLE) | A_BOLD);
+    mvwprintw(win, getmaxy(win) - 2, 2, "Installation Mode: %s (Configurable in 'Installation Mode' menu)", ds.fowo_install_mode.c_str());
+    wattroff(win, COLOR_PAIR(CP_SECTION_TITLE) | A_BOLD);
   }
 
   bool handle_input(WINDOW *win, int ch) override {

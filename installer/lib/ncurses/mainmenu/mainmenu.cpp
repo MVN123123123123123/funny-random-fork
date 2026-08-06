@@ -13,6 +13,7 @@
 #include "pages/zram_page.hpp"
 #include "pages/graphics_page.hpp"
 #include "pages/profile_page.hpp"
+#include "pages/mode_page.hpp"
 #include "pages/network_page.hpp"
 #include "pages/accounts_page.hpp"
 #include "pages/kernels_page.hpp"
@@ -37,6 +38,7 @@ MainMenu::MainMenu(const std::vector<GPUInfo>& gpus,
     add_page("ZRAM and ZSWAP",              new ZramPage());
     add_page("Graphics Hardware",           new GraphicsPage(gpus));
     add_page("Profile",                     new ProfilePage());
+    add_page("Installation Mode",           new ModePage());
     add_page("Network",                     new NetworkPage(ifaces, wifi));
     add_page("Root and User Accounts",      new AccountsPage());
     add_page("Kernels",                     new KernelsPage());
@@ -314,6 +316,7 @@ bool MainMenu::handle_action(const std::string &label) {
     mvwprintw(win_content_, y++, 4, "Audio:       %s", ds.audio_system.c_str());
     mvwprintw(win_content_, y++, 4, "Root Pass:   %s", ds.root_password.empty() ? "NOT SET" : "Set");
     mvwprintw(win_content_, y++, 4, "Users:       %zu", ds.users.size());
+    mvwprintw(win_content_, y++, 4, "Mode:        %s", ds.fowo_install_mode.c_str());
     mvwprintw(win_content_, y++, 4, "Extra Pkgs:  %zu", ds.additional_packages.size());
     std::string config_summary = InstallerBackend::generate_summary();
     std::string config_json = InstallerBackend::generate_json();
