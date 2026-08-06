@@ -113,7 +113,7 @@ public:
         }
 
         // ── Build package list for Base ──
-        std::string base_pkgs = "grub2-pc grub2-efi-x64 util-linux passwd nano iproute iputils e2fsprogs dosfstools parted xfsprogs";
+        std::string base_pkgs = "grub2-pc grub2-efi-x64 util-linux passwd nano iproute iputils e2fsprogs dosfstools parted xfsprogs fontconfig google-noto-sans-fonts google-noto-cjk-fonts dejavu-sans-fonts glibc-all-langpacks glibc-gconv-extra kbd";
         
         bool kernel_selected = false;
         for (const auto& k : ds.kernels) {

@@ -1,9 +1,20 @@
 // ncurseslib.cpp - Core ncurses wrapper implementation for HarukaInstaller
 #include "ncurseslib.hpp"
 #include <clocale>
+#include <cstdlib>
+#include <string>
 
 void NcursesLib::init_ncurses() {
   setlocale(LC_ALL, "");
+  const char *loc = setlocale(LC_ALL, nullptr);
+  if (!loc || std::string(loc) == "C" || std::string(loc) == "POSIX") {
+    if (!setlocale(LC_ALL, "C.UTF-8")) {
+      setlocale(LC_ALL, "en_US.UTF-8");
+    }
+  }
+  setenv("LC_ALL", "C.UTF-8", 1);
+  setenv("LANG", "C.UTF-8", 1);
+
   initscr();
   cbreak();
   noecho();
