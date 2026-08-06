@@ -47,7 +47,13 @@ std::vector<DiskInfo> StorageDetect::get_disks() {
             if (disk_map.find(pkname) != disk_map.end()) {
                 DiskPartition p;
                 p.device = "/dev/" + name;
-                p.mount_point = extract_val(line, "MOUNTPOINT");
+                std::string raw_mp = extract_val(line, "MOUNTPOINT");
+                if (raw_mp.rfind("/mnt", 0) == 0 || raw_mp.rfind("/run", 0) == 0 ||
+                    raw_mp.rfind("/tmp", 0) == 0 || raw_mp.rfind("/sys", 0) == 0 ||
+                    raw_mp.rfind("/proc", 0) == 0) {
+                    raw_mp = "";
+                }
+                p.mount_point = raw_mp;
                 std::string size_str = extract_val(line, "SIZE");
                 p.size_mb = size_str.empty() ? 0 : std::stoull(size_str) / (1024 * 1024);
                 p.filesystem = extract_val(line, "FSTYPE");
@@ -62,6 +68,29 @@ std::vector<DiskInfo> StorageDetect::get_disks() {
         if (name.find("zram") != std::string::npos || name.find("loop") != std::string::npos) {
             continue; // Ignore zram and loop devices
         }
+
+        // Auto-assign smart default target mount points if unassigned
+        bool has_root = false;
+        bool has_efi = false;
+        for (const auto& p : disk_map[name].partitions) {
+            if (p.mount_point == "/") has_root = true;
+            if (p.mount_point == "/boot/efi") has_efi = true;
+        }
+
+        for (auto& p : disk_map[name].partitions) {
+            if (p.filesystem == "swap") {
+                p.mount_point = "[SWAP]";
+            } else if (!has_efi && (p.filesystem == "fat32" || p.filesystem == "vfat") &&
+                       (p.flags.find("esp") != std::string::npos || p.flags.find("boot") != std::string::npos ||
+                        p.device.find("2") != std::string::npos || p.device.find("1") != std::string::npos)) {
+                p.mount_point = "/boot/efi";
+                has_efi = true;
+            } else if (!has_root && (p.filesystem == "ext4" || p.filesystem == "btrfs" || p.filesystem == "xfs")) {
+                p.mount_point = "/";
+                has_root = true;
+            }
+        }
+
         disks.push_back(disk_map[name]);
     }
     

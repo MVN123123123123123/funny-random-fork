@@ -367,8 +367,8 @@ private:
           np.device =
               ds.disks[selected_disk_].device +
               std::to_string(ds.disks[selected_disk_].partitions.size() + 1);
-          np.mount_point = "/mnt/new";
-          np.filesystem = "ext4";
+          np.mount_point = ds.has_root_mountpoint() ? (ds.has_efi_partition() ? "" : "/boot/efi") : "/";
+          np.filesystem = (np.mount_point == "/boot/efi") ? "fat32" : "ext4";
           try {
               np.size_mb = std::stoull(size_str);
           } catch (...) {

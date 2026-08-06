@@ -87,7 +87,9 @@ public:
         std::string root_device;
         for (const auto& disk : ds.disks) {
             for (const auto& part : disk.partitions) {
-                if (part.mount_point == "/") {
+                std::string mp = part.mount_point;
+                if (mp.rfind("/mnt", 0) == 0) { mp = mp.substr(4); if (mp.empty()) mp = "/"; }
+                if (mp == "/") {
                     root_device = part.device;
                     if (root_device.find("/dev/") != 0) root_device = "/dev/" + root_device;
                     cmds.push_back("mount " + root_device + " /mnt");
@@ -98,13 +100,15 @@ public:
         // Mount other partitions
         for (const auto& disk : ds.disks) {
             for (const auto& part : disk.partitions) {
-                if (part.mount_point != "/" && part.mount_point != "[SWAP]" && !part.mount_point.empty()) {
+                std::string mp = part.mount_point;
+                if (mp.rfind("/mnt", 0) == 0) { mp = mp.substr(4); if (mp.empty()) mp = "/"; }
+                if (mp != "/" && mp != "[SWAP]" && !mp.empty()) {
                     std::string dev = part.device;
                     if (dev.find("/dev/") != 0) dev = "/dev/" + dev;
-                    cmds.push_back("mkdir -p /mnt" + part.mount_point);
-                    cmds.push_back("mount " + dev + " /mnt" + part.mount_point);
+                    cmds.push_back("mkdir -p /mnt" + mp);
+                    cmds.push_back("mount " + dev + " /mnt" + mp);
                 }
-                if (part.mount_point == "[SWAP]" || part.filesystem == "swap") {
+                if (mp == "[SWAP]" || part.filesystem == "swap") {
                     std::string dev = part.device;
                     if (dev.find("/dev/") != 0) dev = "/dev/" + dev;
                     cmds.push_back("swapon " + dev);
