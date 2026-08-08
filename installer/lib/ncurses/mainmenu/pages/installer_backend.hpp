@@ -59,14 +59,35 @@ public:
 
         // ── Create and Format partitions ──
         for (const auto& disk : ds.disks) {
+            bool needs_partitioning = false;
+            for (const auto& part : disk.partitions) {
+                if (!part.mount_point.empty()) {
+                    needs_partitioning = true;
+                    break;
+                }
+            }
+            if (needs_partitioning) {
+                // Ensure disk label exists before making partitions
+                cmds.push_back("parted -s " + disk.device + " print >/dev/null 2>&1 || parted -s " + disk.device + " mklabel gpt");
+            }
+
+            uint64_t current_offset_mb = 1; // Start at 1MB
             for (const auto& part : disk.partitions) {
                 if (!part.mount_point.empty()) {
                     std::string dev = part.device;
                     if (dev.find("/dev/") != 0) dev = "/dev/" + dev;
                     
-                    // Simple partition creation if device does not exist
-                    cmds.push_back("if [ ! -b " + dev + " ]; then parted -s " + disk.device + " mkpart primary " + part.filesystem + " 0% " + std::to_string(part.size_mb) + "MB || true; sleep 2; fi");
+                    uint64_t end_offset_mb = current_offset_mb + part.size_mb;
                     
+                    std::string p_fs = part.filesystem;
+                    if (p_fs == "vfat") p_fs = "fat32";
+                    else if (p_fs == "swap") p_fs = "linux-swap";
+                    
+                    // Simple partition creation if device does not exist
+                    cmds.push_back("if [ ! -b " + dev + " ]; then parted -s " + disk.device + " mkpart primary " + p_fs + " " + std::to_string(current_offset_mb) + "MB " + std::to_string(end_offset_mb) + "MB || true; sleep 2; fi");
+                    
+                    current_offset_mb = end_offset_mb;
+
                     if (part.filesystem == "ext4") {
                         cmds.push_back("mkfs.ext4 -F " + dev + " || true");
                     } else if (part.filesystem == "btrfs") {
@@ -78,6 +99,8 @@ public:
                     } else if (part.filesystem == "swap" || part.mount_point == "[SWAP]") {
                         cmds.push_back("mkswap -f " + dev + " || true");
                     }
+                } else {
+                    current_offset_mb += part.size_mb; // Still increment offset for unmounted existing partitions if any
                 }
             }
         }
