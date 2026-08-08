@@ -172,7 +172,7 @@ public:
 
         // Audio System
         if (ds.audio_system == "PipeWire") {
-            base_pkgs += " pipewire pipewire-pulseaudio pipewire-alsa pipewire-jack wireplumber";
+            base_pkgs += " pipewire pipewire-pulseaudio pipewire-alsa wireplumber";
         } else if (ds.audio_system == "PulseAudio") {
             base_pkgs += " pulseaudio pulseaudio-utils";
         }
@@ -352,6 +352,7 @@ chmod +x /sbin/init
         }
 
         // ── Mount virtual filesystems for the rest of chroot commands ──
+        cmds.push_back("mkdir -p /mnt/dev /mnt/proc /mnt/sys /mnt/run");
         cmds.push_back("mount -o bind /dev /mnt/dev");
         cmds.push_back("mount -t proc proc /mnt/proc");
         cmds.push_back("mount -t sysfs sysfs /mnt/sys");
@@ -440,6 +441,11 @@ chmod +x /sbin/init
         if (ds.ntp_enabled) {
             cmds.push_back(chroot_cmd("systemctl enable systemd-timesyncd || true"));
         }
+
+        // Copy the installation log to the new system so it's persisted after reboot
+        cmds.push_back("mkdir -p /mnt/var/log");
+        cmds.push_back("cp /var/log/haruka_installer.log /mnt/var/log/haruka_installer.log || true");
+        cmds.push_back("cp /tmp/haruka_installer.log /mnt/var/log/haruka_installer.log || true");
 
         // Unmount
         cmds.push_back("umount -R /mnt/run /mnt/sys /mnt/proc /mnt/dev || true");

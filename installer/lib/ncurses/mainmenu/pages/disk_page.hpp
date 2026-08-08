@@ -227,7 +227,7 @@ private:
         mvwprintw(win, ry, 6, "%-10s %-25s %8s  %-8s  %-12s",
                   p.device.c_str(), truncate(p.mount_point, 25).c_str(),
                   fmt_size(p.size_mb).c_str(), p.filesystem.c_str(),
-                  p.flags.c_str());
+                  truncate(p.flags, 12).c_str());
       } else if (idx == (int)disk.partitions.size())
         mvwprintw(win, ry, 6, "[+ Create New Partition]");
       else
