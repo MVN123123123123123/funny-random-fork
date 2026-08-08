@@ -381,6 +381,11 @@ chmod +x /sbin/init
             cmds.push_back(chroot_cmd("sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers || true"));
         }
 
+        // ZSWAP Configuration
+        if (ds.zswap_enabled) {
+            cmds.push_back(chroot_cmd("echo 'GRUB_CMDLINE_LINUX=\"${GRUB_CMDLINE_LINUX} zswap.enabled=1\"' >> /etc/default/grub"));
+        }
+
         // Bootloader
         if (ds.bootloader == "GRUB") {
             if (ds.is_uefi) {
