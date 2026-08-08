@@ -353,15 +353,23 @@ private:
           }
           p.flags = fields[4].value;
           try {
-            p.size_mb = std::stoull(fields[5].value);
+            uint64_t new_size = std::stoull(fields[5].value);
+            uint64_t used_mb = 0;
+            for (const auto& part : ds.disks[selected_disk_].partitions) used_mb += part.size_mb;
+            uint64_t free_mb = ds.disks[selected_disk_].size_mb > (used_mb - p.size_mb) ? ds.disks[selected_disk_].size_mb - (used_mb - p.size_mb) : 0;
+            p.size_mb = (new_size > free_mb) ? free_mb : new_size;
           } catch (...) {
           }
         }
       } else if (selected_part_ ==
                  (int)ds.disks[selected_disk_].partitions.size()) {
         // Create New Partition
+        uint64_t used_mb = 0;
+        for (const auto& part : ds.disks[selected_disk_].partitions) used_mb += part.size_mb;
+        uint64_t free_mb = (ds.disks[selected_disk_].size_mb > used_mb) ? (ds.disks[selected_disk_].size_mb - used_mb) : 0;
+
         std::string size_str =
-            InputPopup::show("New Partition", "Enter size in MB:", "1024");
+            InputPopup::show("New Partition", "Enter size in MB (Max: " + std::to_string(free_mb) + "):", std::to_string(free_mb > 0 ? free_mb : 1024));
         if (!size_str.empty()) {
           DiskPartition np;
           np.device =
@@ -372,8 +380,10 @@ private:
           try {
               np.size_mb = std::stoull(size_str);
           } catch (...) {
-              np.size_mb = 1024; // Default on invalid input
+              np.size_mb = free_mb > 0 ? free_mb : 1024; // Default on invalid input
           }
+          if (np.size_mb > free_mb) np.size_mb = free_mb;
+          if (np.size_mb == 0 && free_mb > 0) np.size_mb = 1;
           ds.disks[selected_disk_].partitions.push_back(np);
         }
       } else

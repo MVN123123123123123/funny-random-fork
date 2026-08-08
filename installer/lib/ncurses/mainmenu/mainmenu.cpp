@@ -4,6 +4,7 @@
 #include "sessionlock.hpp"
 #include <algorithm>
 #include <cstring>
+#include <fstream>
 
 // Page headers
 #include "pages/language_page.hpp"
@@ -400,6 +401,14 @@ bool MainMenu::handle_action(const std::string &label) {
     int max_log_y = getmaxy(win_content_) - 4;
     std::vector<std::string> log_history;
     
+    std::ofstream install_log("/var/log/haruka_installer.log", std::ios::out | std::ios::app);
+    if (!install_log.is_open()) {
+        install_log.open("/tmp/haruka_installer.log", std::ios::out | std::ios::app);
+    }
+    if (install_log.is_open()) {
+        install_log << "=== Starting HarukaInstaller Installation ===" << std::endl;
+    }
+    
     for (int i = 0; i < total; i++) {
       // Progress bar
       int bar_w = getmaxx(win_content_) - 8;
@@ -413,6 +422,9 @@ bool MainMenu::handle_action(const std::string &label) {
       
       int max_w = getmaxx(win_content_) - 8;
       auto update_log_view = [&](const std::string& line_str) {
+          if (install_log.is_open()) {
+              install_log << line_str << std::endl;
+          }
           std::string display_line = line_str;
           if ((int)display_line.size() > max_w) display_line = display_line.substr(0, max_w - 3) + "...";
           log_history.push_back(display_line);
