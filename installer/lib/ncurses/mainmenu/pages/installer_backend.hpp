@@ -190,9 +190,19 @@ public:
 
         // ── Bootstrap Fowo ──
         if (ds.fowo_install_mode == "Normal") {
-            cmds.push_back("dnf --use-host-config --installroot=/mnt --releasever=45 install -y @core systemd dnf " + base_pkgs);
+            std::string dnf_opts = "";
+            if (ds.repo_cfg.fastestmirror) dnf_opts += " --setopt=fastestmirror=True";
+            dnf_opts += " --setopt=max_parallel_downloads=" + std::to_string(ds.repo_cfg.parallel_downloads);
+            
+            cmds.push_back("dnf --use-host-config --installroot=/mnt --releasever=45" + dnf_opts + " install -y @core systemd dnf " + base_pkgs);
             cmds.push_back("mkdir -p /mnt/usr/local/bin");
             cmds.push_back("cp /usr/local/bin/fowo /mnt/usr/local/bin/ || true");
+            
+            // Apply settings to the installed system's dnf.conf
+            cmds.push_back("mkdir -p /mnt/etc/dnf");
+            if (ds.repo_cfg.fastestmirror) cmds.push_back("echo 'fastestmirror=True' >> /mnt/etc/dnf/dnf.conf");
+            cmds.push_back("echo 'max_parallel_downloads=" + std::to_string(ds.repo_cfg.parallel_downloads) + "' >> /mnt/etc/dnf/dnf.conf");
+            if (ds.repo_cfg.defaultyes) cmds.push_back("echo 'defaultyes=True' >> /mnt/etc/dnf/dnf.conf");
         } else {
             // Master mode uses fowo to build from source mirrors
             cmds.push_back("mkdir -p /mnt/tmp");
